@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "./supabaseClient";
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
 
 // ─── ANIMATIONS ───
 const fadeUp={hidden:{opacity:0,y:28},show:{opacity:1,y:0,transition:{duration:0.55,ease:[0.22,1,0.36,1]}}};
@@ -58,6 +61,30 @@ const fmt=n=>Number(n).toFixed(0)+" DH";
 const fmtK=n=>n>=1000?(n/1000).toFixed(1)+"k":String(n);
 const todayStr=()=>new Date().toISOString().split("T")[0];
 const pad=n=>String(n).padStart(2,"0");
+
+// ─── EMAIL (RESEND) ───
+async function sendEmail(to,subject,html){
+  const key=import.meta.env.VITE_RESEND_API_KEY;
+  if(!key||!to)return;
+  try{
+    await fetch('https://api.resend.com/emails',{
+      method:'POST',
+      headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'},
+      body:JSON.stringify({from:'Just Koul <onboarding@resend.dev>',to:[to],subject,html})
+    });
+  }catch(e){console.error('Resend error:',e);}
+}
+function emailHtmlVerif(prenom,code){
+  return `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#FDF8EE;border-radius:16px;overflow:hidden"><div style="background:#2C4A1E;padding:28px;text-align:center"><div style="font-size:28px;font-weight:800;color:#E8A555;letter-spacing:1px">JUST KOUL</div><div style="color:rgba(255,255,255,0.6);font-size:12px;margin-top:4px">Eat · Enjoy · Repeat</div></div><div style="padding:32px"><h2 style="color:#2C4A1E;font-size:20px;margin:0 0 16px">✅ Vérifiez votre adresse email</h2><p style="color:#6B5240;font-size:14px;line-height:1.7;margin:0 0 8px">Bonjour <strong>${prenom}</strong>,</p><p style="color:#6B5240;font-size:14px;line-height:1.7;margin:0 0 20px">Voici votre code de vérification :</p><div style="background:#2C4A1E;color:#E8A555;font-family:monospace;font-size:38px;font-weight:800;letter-spacing:12px;padding:20px;border-radius:12px;text-align:center;margin-bottom:20px">${code}</div><p style="color:#6B5240;font-size:13px;margin:0 0 8px">Ce code expire dans <strong>15 minutes</strong>.</p><p style="color:#9E9387;font-size:12px;margin:0">Si vous n'avez pas créé de compte, ignorez cet email.</p></div><div style="background:#2C4A1E;padding:14px;text-align:center;font-size:11px;color:rgba(255,255,255,0.45)">Just Koul · Agadir · 06 33 95 87 60</div></div>`;
+}
+function emailHtmlConfirm(prenom,enroll){
+  const formLabel=FORMULES.find(f=>f.id===enroll.formule)?.label||enroll.formule;
+  const school=SCHOOLS.find(s=>s.id===enroll.school)?.label||enroll.school;
+  return `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#FDF8EE;border-radius:16px;overflow:hidden"><div style="background:#2C4A1E;padding:28px;text-align:center"><div style="font-size:28px;font-weight:800;color:#E8A555;letter-spacing:1px">JUST KOUL</div><div style="color:rgba(255,255,255,0.6);font-size:12px;margin-top:4px">Eat · Enjoy · Repeat</div></div><div style="padding:32px"><h2 style="color:#2C4A1E;font-size:20px;margin:0 0 16px">🎉 Votre inscription est confirmée !</h2><p style="color:#6B5240;font-size:14px;line-height:1.7;margin:0 0 8px">Bonjour <strong>${prenom}</strong>,</p><p style="color:#6B5240;font-size:14px;line-height:1.7;margin:0 0 16px">Votre inscription à la cantine <strong>Just Koul</strong> est confirmée !</p><div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:20px;border:1px solid rgba(200,135,58,0.2)"><div style="font-size:13px;color:#6B5240;line-height:2.2"><div>📋 Formule : <strong>${formLabel}</strong></div><div>🏫 École : <strong>${school}</strong></div><div>👧 Enfants : <strong>${enroll.children.length}</strong></div><div>💰 Total : <strong>${enroll.amount} DH</strong></div></div></div><p style="color:#2C4A1E;font-weight:700;font-size:14px;margin:0 0 10px">Pour payer par virement :</p><div style="background:#F0F9F0;border-radius:10px;padding:14px;font-size:13px;color:#2C4A1E;line-height:2.2;margin-bottom:24px">🏦 Banque Populaire du Maroc<br/>RIB : <strong>101 810 0004800078601 34</strong><br/>Référence virement : <strong>${enroll.id}</strong></div><div style="text-align:center"><a href="https://just-koul.vercel.app" style="background:#2C4A1E;color:#fff;padding:12px 28px;border-radius:20px;text-decoration:none;font-weight:700;font-size:13px;display:inline-block">Accéder à mon espace →</a></div></div><div style="background:#2C4A1E;padding:14px;text-align:center;font-size:11px;color:rgba(255,255,255,0.45)">Just Koul · Agadir · 06 33 95 87 60</div></div>`;
+}
+function emailHtmlReset(code){
+  return `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#FDF8EE;border-radius:16px;overflow:hidden"><div style="background:#2C4A1E;padding:28px;text-align:center"><div style="font-size:28px;font-weight:800;color:#E8A555;letter-spacing:1px">JUST KOUL</div><div style="color:rgba(255,255,255,0.6);font-size:12px;margin-top:4px">Eat · Enjoy · Repeat</div></div><div style="padding:32px"><h2 style="color:#2C4A1E;font-size:20px;margin:0 0 16px">🔑 Réinitialisation de mot de passe</h2><p style="color:#6B5240;font-size:14px;line-height:1.7;margin:0 0 8px">Bonjour,</p><p style="color:#6B5240;font-size:14px;line-height:1.7;margin:0 0 20px">Voici votre code de réinitialisation :</p><div style="background:#2C4A1E;color:#E8A555;font-family:monospace;font-size:38px;font-weight:800;letter-spacing:12px;padding:20px;border-radius:12px;text-align:center;margin-bottom:20px">${code}</div><p style="color:#6B5240;font-size:13px;margin:0 0 8px">Valable <strong>15 minutes</strong> uniquement.</p><p style="color:#9E9387;font-size:12px;margin:0">Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.</p></div><div style="background:#2C4A1E;padding:14px;text-align:center;font-size:11px;color:rgba(255,255,255,0.45)">Just Koul · Agadir · 06 33 95 87 60</div></div>`;
+}
 
 // ─── INITIAL DATA ───
 const INIT={
@@ -147,6 +174,60 @@ const INIT={
   revenueMonthly:[3200,4100,3800,5200,4900,6100,5500,4800,6800,7200,6500,8100],
 };
 
+// ─── ÉTAT INITIAL VIDE (Supabase est la seule source de vérité) ───
+const EMPTY={
+  enrollments:[],orders:[],monthMenus:[],gallery:[],reviews:[],
+  quotes:[],team:[],tasks:[],stock:[],invoices:[],
+  revenueWeekly:INIT.revenueWeekly,revenueMonthly:INIT.revenueMonthly,
+};
+
+// ─── SUPABASE FIELD TRANSFORMERS (snake_case ↔ camelCase) ───
+const tE=r=>({id:r.id,parentNom:r.parent_nom||'',parentPrenom:r.parent_prenom||'',tel:r.tel||'',email:r.email||'',school:r.school||'al-hanane',autreEcole:r.autre_ecole||'',children:r.children||[],formule:r.formule||'mensuel',repasType:r.repas_type||'pe',days:r.days||{},status:r.status||'pending',payStatus:r.pay_status||'pending',payMethod:r.pay_method||'',amount:r.amount||0,discount:r.discount||0,delivery:r.delivery||0,invoiceValidated:r.invoice_validated||false,notes:r.notes||'',createdAt:(r.created_at||'').split('T')[0]});
+const fE=e=>({parent_nom:e.parentNom,parent_prenom:e.parentPrenom,tel:e.tel,email:e.email,school:e.school,autre_ecole:e.autreEcole,children:e.children,formule:e.formule,repas_type:e.repasType,days:e.days,status:e.status,pay_status:e.payStatus,pay_method:e.payMethod,amount:e.amount,discount:e.discount,delivery:e.delivery,invoice_validated:e.invoiceValidated,notes:e.notes});
+const tO=r=>({id:r.id,enrollId:r.enroll_id,date:r.date||'',menu:r.menu||'',delivered:r.delivered||false,deliveredAt:r.delivered_at||'',note:r.note||'',childName:r.child_name||''});
+const tQ=r=>({id:r.id,nom:r.nom||'',tel:r.tel||'',email:r.email||'',typeEvent:r.type_event||'',date:r.date||'',nbPersonnes:r.nb_personnes||'',budget:r.budget||'',message:r.message||'',status:r.status||'new',createdAt:(r.created_at||'').split('T')[0],items:r.items||[],total:r.total||0,deposit:r.deposit||0,depositPaid:r.deposit_paid||false,notes:r.notes||''});
+const fQ=q=>({nom:q.nom,tel:q.tel,email:q.email||'',type_event:q.typeEvent||'',date:q.date||null,nb_personnes:q.nbPersonnes?Number(q.nbPersonnes):null,budget:q.budget||'',message:q.message||'',status:q.status||'new',items:q.items||[],total:q.total||0,deposit:q.deposit||0,deposit_paid:q.depositPaid||false,notes:q.notes||''});
+const tI=r=>({id:r.id,enrollId:r.enroll_id,quoteId:r.quote_id,type:r.type||'cantine',clientNom:r.client_nom||'',clientTel:r.client_tel||'',issueDate:r.issue_date||'',dueDate:r.due_date||'',paidDate:r.paid_date||'',status:r.status||'pending',items:r.items||[],subtotal:r.subtotal||0,discount:r.discount||0,total:r.total||0,deposit:r.deposit||0,depositPaid:r.deposit_paid||false,notes:r.notes||''});
+const tS=r=>({id:r.id,name:r.name||'',category:r.category||'',unit:r.unit||'kg',qty:r.qty||0,minQty:r.min_qty||0,costUnit:r.cost_unit||0,supplier:r.supplier||'',lastUpdated:(r.last_updated||'').split('T')[0]});
+const fS=s=>({name:s.name,category:s.category,unit:s.unit,qty:s.qty,min_qty:s.minQty,cost_unit:s.costUnit,supplier:s.supplier,last_updated:new Date().toISOString()});
+const tT=r=>({id:r.id,nom:r.nom||'',prenom:r.prenom||'',role:r.role||'',tel:r.tel||'',email:r.email||'',status:r.status||'active',avatar:r.avatar||'👤',schedule:r.schedule||{},salary:r.salary||0,startDate:r.start_date||'',note:r.note||''});
+const fT=m=>({nom:m.nom,prenom:m.prenom,role:m.role,tel:m.tel,email:m.email,status:m.status,avatar:m.avatar,schedule:m.schedule,salary:m.salary,start_date:m.startDate||null,note:m.note});
+const tTk=r=>({id:r.id,title:r.title||'',assignee:r.assignee,dueDate:r.due_date||'',status:r.status||'pending',priority:r.priority||'medium'});
+const fTk=t=>({title:t.title,assignee:t.assignee||null,due_date:t.dueDate||null,status:t.status,priority:t.priority});
+const tM=r=>({id:r.id,month:r.month,year:r.year,label:r.label||'',weeks:r.weeks||[]});
+const tR=r=>({id:r.id,enrollId:r.enroll_id,parentNom:r.parent_nom||'',rating:r.rating||0,text:r.text||'',status:r.status||'pending',date:r.date||''});
+const fR=r=>({enroll_id:r.enrollId||null,parent_nom:r.parentNom,rating:r.rating,text:r.text,status:r.status||'pending',date:r.date});
+const tG=r=>({id:r.id,url:r.url||'',label:r.label||'',date:r.date||''});
+
+async function loadAllData(){
+  const [en,or,mm,gal,rev,qt,tm,tk,st,inv]=await Promise.all([
+    supabase.from('enrollments').select('*').order('created_at',{ascending:false}),
+    supabase.from('orders').select('*').order('date',{ascending:false}),
+    supabase.from('month_menus').select('*').order('year').order('month'),
+    supabase.from('gallery').select('*').order('date',{ascending:false}),
+    supabase.from('reviews').select('*').order('date',{ascending:false}),
+    supabase.from('quotes').select('*').order('created_at',{ascending:false}),
+    supabase.from('team').select('*'),
+    supabase.from('tasks').select('*'),
+    supabase.from('stock').select('*'),
+    supabase.from('invoices').select('*').order('issue_date',{ascending:false}),
+  ]);
+  return {
+    enrollments:(en.data||[]).map(tE),
+    orders:(or.data||[]).map(tO),
+    monthMenus:(mm.data||[]).map(tM),
+    gallery:(gal.data||[]).map(tG),
+    reviews:(rev.data||[]).map(tR),
+    quotes:(qt.data||[]).map(tQ),
+    team:(tm.data||[]).map(tT),
+    tasks:(tk.data||[]).map(tTk),
+    stock:(st.data||[]).map(tS),
+    invoices:(inv.data||[]).map(tI),
+    revenueWeekly:INIT.revenueWeekly,
+    revenueMonthly:INIT.revenueMonthly,
+  };
+}
+
 // ═══════════════════════════════════════
 //   SHARED UI COMPONENTS
 // ═══════════════════════════════════════
@@ -202,6 +283,13 @@ function Stars({rating,onChange}){
   return <div style={{display:"flex",gap:3}}>
     {[1,2,3,4,5].map(s=><span key={s} onClick={()=>onChange&&onChange(s)} style={{fontSize:20,cursor:onChange?"pointer":"default",color:s<=rating?C.gold:"#DDD"}}>★</span>)}
   </div>;
+}
+function Toast({msg,onClose}){
+  useEffect(()=>{const t=setTimeout(onClose,4000);return()=>clearTimeout(t);},[onClose]);
+  return <motion.div initial={{opacity:0,y:40,scale:0.9}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:40}}
+    style={{position:"fixed",bottom:28,right:28,background:C.green,color:C.white,padding:"13px 22px",borderRadius:18,
+      fontFamily:F.sans,fontWeight:700,fontSize:13,zIndex:9999,boxShadow:"0 8px 32px rgba(44,74,30,0.35)",maxWidth:320,cursor:"pointer"}}
+    onClick={onClose}>{msg}</motion.div>;
 }
 function StatusBadge({status}){
   const m={
@@ -284,50 +372,230 @@ function TRow({cells,even,onClick,actions}){
 // ═══════════════════════════════════════
 //   LOGIN MODAL
 // ═══════════════════════════════════════
-function LoginModal({onLogin,onClose}){
-  const [sel,setSel]=useState(null);const [pwd,setPwd]=useState("");const [err,setErr]=useState("");
-  const PWDS={parent:"parent",admin:"admin123",livreur:"livreur"};
-  const roles=[
-    {id:"parent",icon:"👨‍👩‍👧‍👦",label:"Espace Parents",desc:"Inscription, menus & suivi",color:C.green},
-    {id:"admin",icon:"⚙️",label:"Espace Admin",desc:"Gestion complète de l'activité",color:C.brown},
-    {id:"livreur",icon:"🛵",label:"Espace Livreur",desc:"Validation des livraisons",color:C.blue},
-  ];
-  const login=()=>{if(pwd===PWDS[sel])onLogin(sel);else setErr("Mot de passe incorrect");};
+function LoginModal({onLogin,onClose,data}){
+  const [view,setView]=useState("login");
+  // login
+  const [identifier,setIdentifier]=useState("");
+  const [pwd,setPwd]=useState("");
+  const [err,setErr]=useState("");
+  const [busy,setBusy]=useState(false);
+  // signup
+  const [sf,setSf]=useState({prenom:"",nom:"",email:"",tel:"",pwd:"",pwd2:""});
+  const [sErr,setSErr]=useState("");
+  const [sBusy,setSBusy]=useState(false);
+  const [sOk,setSOk]=useState("");
+  // forgot
+  const [fEmail,setFEmail]=useState("");
+  const [fMsg,setFMsg]=useState("");
+  const [fBusy,setFBusy]=useState(false);
+  // verify (signup + forgot)
+  const [verfCode,setVerfCode]=useState("");
+  const [verfExpiry,setVerfExpiry]=useState(0);
+  const [verfInput,setVerfInput]=useState("");
+  const [verfErr,setVerfErr]=useState("");
+  const [verfBusy,setVerfBusy]=useState(false);
+
+  const doLogin=async()=>{
+    if(!identifier.trim()||!pwd){setErr("Remplissez tous les champs");return;}
+    setBusy(true);setErr("");
+    const id=identifier.trim().toLowerCase();
+    if(id==="admin"){
+      if(pwd===import.meta.env.VITE_ADMIN_PASSWORD){onLogin("admin");return;}
+      setErr("Mot de passe incorrect");setBusy(false);return;
+    }
+    if(id==="livreur"){
+      if(pwd===import.meta.env.VITE_LIVREUR_PASSWORD){onLogin("livreur");return;}
+      setErr("Mot de passe incorrect");setBusy(false);return;
+    }
+    const found=(data?.enrollments||[]).find(e=>e.parentNom.toLowerCase()===id||e.email.toLowerCase()===id);
+    if(found){
+      if(pwd==="parent123"){onLogin("parent");return;}
+      const{error}=await supabase.auth.signInWithPassword({email:found.email,password:pwd});
+      if(!error){onLogin("parent");return;}
+      setErr("Mot de passe incorrect");setBusy(false);return;
+    }
+    if(identifier.includes("@")){
+      const{error}=await supabase.auth.signInWithPassword({email:identifier.trim(),password:pwd});
+      if(!error){onLogin("parent");return;}
+    }
+    setErr("Identifiant introuvable. Vérifiez votre nom ou email.");
+    setBusy(false);
+  };
+
+  const doSignup=async()=>{
+    const{prenom,nom,email,tel,pwd:p,pwd2}=sf;
+    if(!prenom||!nom||!email||!p){setSErr("Tous les champs obligatoires sont requis");return;}
+    if(p!==pwd2){setSErr("Les mots de passe ne correspondent pas");return;}
+    if(p.length<6){setSErr("Mot de passe trop court (min. 6 caractères)");return;}
+    setSBusy(true);setSErr("");
+    const code=String(Math.floor(100000+Math.random()*900000));
+    setVerfCode(code);setVerfExpiry(Date.now()+15*60*1000);setVerfInput("");setVerfErr("");
+    await sendEmail(email,"✅ Vérifiez votre adresse email — Just Koul",emailHtmlVerif(prenom,code));
+    setSBusy(false);
+    setView("verify_signup");
+  };
+  const doVerifySignup=async()=>{
+    if(verfInput!==verfCode){setVerfErr("Code incorrect. Vérifiez votre email.");return;}
+    if(Date.now()>verfExpiry){setVerfErr("Code expiré. Veuillez recommencer.");return;}
+    setVerfBusy(true);setVerfErr("");
+    const{prenom,nom,email,tel,pwd:p}=sf;
+    const{error}=await supabase.auth.signUp({email,password:p,options:{data:{prenom,nom,tel}}});
+    setVerfBusy(false);
+    if(error){setVerfErr(error.message);return;}
+    setSOk(`Compte créé !\nVotre identifiant : ${nom.toLowerCase()}\nBienvenue chez Just Koul !`);
+    setView("signup");
+  };
+
+  const doForgot=async()=>{
+    if(!fEmail.trim()){setFMsg("Entrez votre email");return;}
+    setFBusy(true);
+    const code=String(Math.floor(100000+Math.random()*900000));
+    setVerfCode(code);setVerfExpiry(Date.now()+15*60*1000);setVerfInput("");setVerfErr("");
+    await sendEmail(fEmail.trim(),"🔑 Réinitialisation de votre mot de passe — Just Koul",emailHtmlReset(code));
+    setFBusy(false);setFMsg("");
+    setView("verify_forgot");
+  };
+  const doVerifyForgot=async()=>{
+    if(verfInput!==verfCode){setVerfErr("Code incorrect. Vérifiez votre email.");return;}
+    if(Date.now()>verfExpiry){setVerfErr("Code expiré. Veuillez recommencer.");return;}
+    setVerfBusy(true);setVerfErr("");
+    const{error}=await supabase.auth.resetPasswordForEmail(fEmail.trim(),{redirectTo:"https://just-koul.vercel.app/reset-password"});
+    setVerfBusy(false);
+    if(error){setVerfErr(error.message);return;}
+    setFMsg("Lien de réinitialisation envoyé ! Vérifiez votre boîte mail.");
+    setView("forgot");
+  };
+
+  const goBack=()=>{setView("login");setErr("");setSErr("");setFMsg("");setSOk("");setVerfInput("");setVerfErr("");setVerfCode("");};
+  const iS={width:"100%",padding:"12px 14px",fontFamily:F.sans,fontSize:14,background:C.white,color:C.text,border:`1.5px solid rgba(200,135,58,0.28)`,borderRadius:12,outline:"none",boxSizing:"border-box",marginBottom:12};
+  const lS={fontFamily:F.sans,fontWeight:700,fontSize:11,color:C.green,display:"block",marginBottom:5,letterSpacing:0.3};
+
   return <AnimatePresence><motion.div key="ov" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
     style={{position:"fixed",inset:0,zIndex:2000,background:"rgba(42,31,20,0.65)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}
     onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
     <motion.div initial={{opacity:0,scale:0.88,y:24}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:0.9}}
       transition={{duration:0.38,ease:[0.22,1,0.36,1]}}
-      style={{background:C.cream,borderRadius:28,padding:"2.5rem",width:"100%",maxWidth:440,boxShadow:"0 24px 80px rgba(0,0,0,0.3)",fontFamily:F.sans}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"1.5rem"}}>
-        <div><h2 style={{fontFamily:F.serif,fontSize:22,color:C.green,margin:0}}>Connexion</h2><p style={{fontSize:12,color:C.textL,margin:"4px 0 0"}}>Accédez à votre espace</p></div>
-        <button onClick={onClose} style={{background:"rgba(44,74,30,0.08)",border:"none",borderRadius:"50%",width:34,height:34,cursor:"pointer",fontSize:16,color:C.green}}>✕</button>
+      style={{background:C.cream,borderRadius:28,padding:"2.2rem",width:"100%",maxWidth:420,boxShadow:"0 24px 80px rgba(0,0,0,0.3)",fontFamily:F.sans,maxHeight:"90vh",overflowY:"auto"}}>
+
+      {/* Header */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"1.5rem"}}>
+        <div>
+          {view!=="login"&&<button onClick={goBack} style={{background:"none",border:"none",cursor:"pointer",fontFamily:F.sans,fontSize:12,color:C.textL,marginBottom:4,padding:0,display:"block"}}>← Retour</button>}
+          <h2 style={{fontFamily:F.serif,fontSize:22,color:C.green,margin:0}}>
+            {view==="login"?"Connexion":view==="signup"?"Créer un compte":view==="verify_signup"?"Vérification email":view==="verify_forgot"?"Entrez le code":"Mot de passe oublié"}
+          </h2>
+          <p style={{fontSize:12,color:C.textL,margin:"4px 0 0"}}>
+            {view==="login"?"Accédez à votre espace":view==="signup"?"Inscription parent":view==="verify_signup"||view==="verify_forgot"?"Vérification en deux étapes":"Réinitialisation"}
+          </p>
+        </div>
+        <button onClick={onClose} style={{background:"rgba(44,74,30,0.08)",border:"none",borderRadius:"50%",width:34,height:34,cursor:"pointer",fontSize:16,color:C.green,flexShrink:0}}>✕</button>
       </div>
-      {!sel?(
-        <motion.div variants={stagger} initial="hidden" animate="show" style={{display:"flex",flexDirection:"column",gap:10}}>
-          {roles.map(r=><motion.div key={r.id} variants={fadeUp} onClick={()=>setSel(r.id)}
-            whileHover={{x:5}} whileTap={{scale:0.98}}
-            style={{display:"flex",alignItems:"center",gap:14,padding:"14px 18px",background:C.white,borderRadius:14,cursor:"pointer",border:`2px solid transparent`,transition:"border-color 0.2s"}}
-            onMouseOver={e=>e.currentTarget.style.borderColor=r.color}
-            onMouseOut={e=>e.currentTarget.style.borderColor="transparent"}>
-            <div style={{fontSize:30}}>{r.icon}</div>
-            <div><div style={{fontWeight:700,fontSize:14,color:r.color}}>{r.label}</div><div style={{fontSize:11,color:C.textL}}>{r.desc}</div></div>
-            <div style={{marginLeft:"auto",color:C.textL}}>→</div>
-          </motion.div>)}
-          <div style={{textAlign:"center",fontSize:10,color:C.textL,marginTop:4}}>Démo : parent / admin123 / livreur</div>
-        </motion.div>
-      ):(
-        <motion.div initial={{opacity:0,y:14}} animate={{opacity:1,y:0}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:C.white,borderRadius:12,marginBottom:18}}>
-            <span style={{fontSize:26}}>{roles.find(r=>r.id===sel)?.icon}</span>
-            <div style={{fontWeight:700,color:C.green,fontSize:14}}>{roles.find(r=>r.id===sel)?.label}</div>
-            <button onClick={()=>{setSel(null);setPwd("");setErr("");}} style={{marginLeft:"auto",background:"none",border:"none",cursor:"pointer",color:C.textL,fontSize:12}}>Changer →</button>
+
+      {/* ── LOGIN VIEW ── */}
+      {view==="login"&&<motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}}>
+        <div style={{marginBottom:0}}>
+          <label style={lS}>Identifiant <span style={{color:C.red}}>*</span></label>
+          <input style={iS} type="text" value={identifier} onChange={e=>{setIdentifier(e.target.value);setErr("");}}
+            placeholder="benali ou fatima@ex.com" onKeyDown={e=>e.key==="Enter"&&doLogin()}/>
+        </div>
+        <div>
+          <label style={lS}>Mot de passe <span style={{color:C.red}}>*</span></label>
+          <input style={{...iS,marginBottom:16}} type="password" value={pwd} onChange={e=>{setPwd(e.target.value);setErr("");}}
+            placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&doLogin()}/>
+        </div>
+        {err&&<div style={{color:C.red,fontSize:12,marginBottom:12,padding:"8px 12px",background:"#FEF2F2",borderRadius:8}}>⚠ {err}</div>}
+        <Btn onClick={doLogin} full disabled={busy}>{busy?"Connexion…":"Se connecter →"}</Btn>
+        <button onClick={()=>setView("forgot")} style={{display:"block",width:"100%",background:"none",border:"none",cursor:"pointer",fontFamily:F.sans,fontSize:12,color:C.textL,marginTop:12,textAlign:"center",padding:4}}>
+          Mot de passe oublié ?
+        </button>
+        <div style={{borderTop:`1px solid rgba(200,135,58,0.15)`,marginTop:14,paddingTop:14,textAlign:"center"}}>
+          <span style={{fontSize:12,color:C.textL}}>Pas encore de compte ? </span>
+          <button onClick={()=>setView("signup")} style={{background:"none",border:"none",cursor:"pointer",fontFamily:F.sans,fontSize:12,fontWeight:700,color:C.green,padding:0}}>
+            Créer mon compte →
+          </button>
+        </div>
+        <div style={{marginTop:14,padding:"10px 12px",background:"rgba(44,74,30,0.05)",borderRadius:12,fontSize:11,color:C.textL,lineHeight:1.6}}>
+          <strong style={{color:C.green}}>Démo :</strong> benali / parent123 · admin / admin2026 · livreur / livreur2026
+        </div>
+      </motion.div>}
+
+      {/* ── SIGNUP VIEW ── */}
+      {view==="signup"&&<motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}}>
+        {sOk?(
+          <div style={{textAlign:"center",padding:"1rem 0"}}>
+            <div style={{fontSize:48,marginBottom:12}}>✅</div>
+            <div style={{fontFamily:F.serif,fontSize:16,color:C.green,marginBottom:16,whiteSpace:"pre-line",lineHeight:1.7}}>{sOk}</div>
+            <Btn onClick={()=>{setSOk("");setView("login");}} full variant="outline">Retour à la connexion</Btn>
           </div>
-          <Inp label="Mot de passe" type="password" value={pwd} onChange={v=>{setPwd(v);setErr("");}} placeholder="••••••••" required/>
-          {err&&<div style={{color:C.red,fontSize:12,marginBottom:12}}>⚠ {err}</div>}
-          <Btn onClick={login} full>Connexion →</Btn>
-        </motion.div>
-      )}
+        ):(
+          <>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:0}}>
+              <div>
+                <label style={lS}>Prénom <span style={{color:C.red}}>*</span></label>
+                <input style={{...iS}} type="text" value={sf.prenom} onChange={e=>setSf(f=>({...f,prenom:e.target.value}))} placeholder="Prénom"/>
+              </div>
+              <div>
+                <label style={lS}>Nom <span style={{color:C.red}}>*</span></label>
+                <input style={{...iS}} type="text" value={sf.nom} onChange={e=>setSf(f=>({...f,nom:e.target.value}))} placeholder="Nom"/>
+              </div>
+            </div>
+            <label style={lS}>Email <span style={{color:C.red}}>*</span></label>
+            <input style={iS} type="email" value={sf.email} onChange={e=>setSf(f=>({...f,email:e.target.value}))} placeholder="votre@email.com"/>
+            <label style={lS}>Téléphone</label>
+            <input style={iS} type="tel" value={sf.tel} onChange={e=>setSf(f=>({...f,tel:e.target.value}))} placeholder="06 XX XX XX XX"/>
+            <label style={lS}>Mot de passe <span style={{color:C.red}}>*</span></label>
+            <input style={iS} type="password" value={sf.pwd} onChange={e=>setSf(f=>({...f,pwd:e.target.value}))} placeholder="Min. 6 caractères"/>
+            <label style={lS}>Confirmer le mot de passe</label>
+            <input style={{...iS,marginBottom:16}} type="password" value={sf.pwd2} onChange={e=>setSf(f=>({...f,pwd2:e.target.value}))} placeholder="••••••••"/>
+            {sErr&&<div style={{color:C.red,fontSize:12,marginBottom:12,padding:"8px 12px",background:"#FEF2F2",borderRadius:8}}>⚠ {sErr}</div>}
+            <Btn onClick={doSignup} full disabled={sBusy}>{sBusy?"Création…":"Créer mon compte →"}</Btn>
+          </>
+        )}
+      </motion.div>}
+
+      {/* ── FORGOT VIEW ── */}
+      {view==="forgot"&&<motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}}>
+        <p style={{fontSize:13,color:C.textL,marginBottom:16,lineHeight:1.6}}>
+          Entrez votre email pour recevoir un code de réinitialisation.
+        </p>
+        <label style={lS}>Email <span style={{color:C.red}}>*</span></label>
+        <input style={{...iS,marginBottom:16}} type="email" value={fEmail} onChange={e=>setFEmail(e.target.value)} placeholder="votre@email.com" onKeyDown={e=>e.key==="Enter"&&!fMsg&&doForgot()}/>
+        {fMsg&&<div style={{fontSize:12,marginBottom:12,padding:"8px 12px",background:fMsg.includes("Erreur")?"#FEF2F2":"#F0FDF4",borderRadius:8,color:fMsg.includes("Erreur")?C.red:"#16A34A"}}>{fMsg}</div>}
+        <Btn onClick={doForgot} full disabled={fBusy||!!fMsg}>{fBusy?"Envoi…":"Envoyer le code →"}</Btn>
+      </motion.div>}
+
+      {/* ── VERIFY SIGNUP VIEW ── */}
+      {view==="verify_signup"&&<motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}}>
+        <p style={{fontSize:13,color:C.textL,marginBottom:16,lineHeight:1.6}}>
+          Un code à 6 chiffres a été envoyé à <strong>{sf.email}</strong>. Entrez-le ci-dessous.
+        </p>
+        <label style={lS}>Code de vérification <span style={{color:C.red}}>*</span></label>
+        <input style={{...iS,fontSize:24,letterSpacing:10,textAlign:"center",marginBottom:16}} type="text" maxLength={6}
+          value={verfInput} onChange={e=>setVerfInput(e.target.value.replace(/\D/g,""))} placeholder="000000"
+          onKeyDown={e=>e.key==="Enter"&&doVerifySignup()}/>
+        {verfErr&&<div style={{color:C.red,fontSize:12,marginBottom:12,padding:"8px 12px",background:"#FEF2F2",borderRadius:8}}>⚠ {verfErr}</div>}
+        <Btn onClick={doVerifySignup} full disabled={verfBusy||verfInput.length<6}>{verfBusy?"Vérification…":"Confirmer →"}</Btn>
+        <button onClick={()=>setView("signup")} style={{display:"block",width:"100%",background:"none",border:"none",cursor:"pointer",fontFamily:F.sans,fontSize:12,color:C.textL,marginTop:12,textAlign:"center",padding:4}}>
+          Changer d'email / Recommencer
+        </button>
+      </motion.div>}
+
+      {/* ── VERIFY FORGOT VIEW ── */}
+      {view==="verify_forgot"&&<motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}}>
+        <p style={{fontSize:13,color:C.textL,marginBottom:16,lineHeight:1.6}}>
+          Un code a été envoyé à <strong>{fEmail}</strong>. Entrez-le pour continuer.
+        </p>
+        <label style={lS}>Code de réinitialisation <span style={{color:C.red}}>*</span></label>
+        <input style={{...iS,fontSize:24,letterSpacing:10,textAlign:"center",marginBottom:16}} type="text" maxLength={6}
+          value={verfInput} onChange={e=>setVerfInput(e.target.value.replace(/\D/g,""))} placeholder="000000"
+          onKeyDown={e=>e.key==="Enter"&&doVerifyForgot()}/>
+        {verfErr&&<div style={{color:C.red,fontSize:12,marginBottom:12,padding:"8px 12px",background:"#FEF2F2",borderRadius:8}}>⚠ {verfErr}</div>}
+        <Btn onClick={doVerifyForgot} full disabled={verfBusy||verfInput.length<6}>{verfBusy?"Vérification…":"Confirmer →"}</Btn>
+        <button onClick={()=>{setView("forgot");setVerfInput("");setVerfErr("");}} style={{display:"block",width:"100%",background:"none",border:"none",cursor:"pointer",fontFamily:F.sans,fontSize:12,color:C.textL,marginTop:12,textAlign:"center",padding:4}}>
+          ← Retour
+        </button>
+      </motion.div>}
+
     </motion.div>
   </motion.div></AnimatePresence>;
 }
@@ -335,38 +603,115 @@ function LoginModal({onLogin,onClose}){
 // ═══════════════════════════════════════
 //   LOGO SVG COMPONENT
 // ═══════════════════════════════════════
-function JustKoulLogo({size=44,textColor=C.green,goldColor=C.gold,showText=true}){
-  return <div style={{display:"flex",alignItems:"center",gap:showText?10:0,cursor:"pointer",userSelect:"none"}}>
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Plate circle */}
-      <circle cx="50" cy="50" r="44" stroke={textColor} strokeWidth="4" fill="none"/>
-      {/* Smiley face */}
-      <circle cx="50" cy="50" r="22" stroke={textColor} strokeWidth="3" fill="none"/>
-      {/* Eyes */}
-      <circle cx="43" cy="45" r="2.5" fill={textColor}/>
-      <circle cx="57" cy="45" r="2.5" fill={textColor}/>
-      {/* Smile */}
-      <path d="M 42 54 Q 50 62 58 54" stroke={textColor} strokeWidth="3" strokeLinecap="round" fill="none"/>
-      {/* Fork (left) */}
-      <line x1="19" y1="22" x2="19" y2="48" stroke={textColor} strokeWidth="3" strokeLinecap="round"/>
-      <line x1="15" y1="22" x2="15" y2="32" stroke={textColor} strokeWidth="2.5" strokeLinecap="round"/>
-      <line x1="19" y1="22" x2="19" y2="32" stroke={textColor} strokeWidth="2.5" strokeLinecap="round"/>
-      <line x1="23" y1="22" x2="23" y2="32" stroke={textColor} strokeWidth="2.5" strokeLinecap="round"/>
-      <path d="M 15 32 Q 15 36 19 37 Q 23 36 23 32" stroke={textColor} strokeWidth="2" fill="none"/>
-      {/* Spoon (right) */}
-      <line x1="81" y1="36" x2="81" y2="78" stroke={textColor} strokeWidth="3" strokeLinecap="round"/>
-      <ellipse cx="81" cy="28" rx="6" ry="9" stroke={textColor} strokeWidth="2.5" fill="none"/>
-    </svg>
-    {showText&&<div>
-      <div style={{fontFamily:F.serif,fontWeight:800,fontSize:size*0.38,lineHeight:1,color:textColor,letterSpacing:-0.5}}>JUST</div>
-      <div style={{fontFamily:F.serif,fontWeight:800,fontSize:size*0.38,lineHeight:1,color:goldColor,letterSpacing:-0.5}}>KOUL</div>
-      <div style={{fontFamily:F.sans,fontWeight:600,fontSize:size*0.15,color:textColor,opacity:0.6,letterSpacing:1.2,textTransform:"uppercase",marginTop:1}}>Eat · Enjoy · Repeat</div>
-    </div>}
-  </div>;
+function JustKoulLogo({size=44,showText=true}){
+  if(!showText){
+    return <img src="/images/logo-justkoul.svg" alt="Just Koul" style={{height:size,width:"auto",objectFit:"contain",display:"block"}}/>;
+  }
+  return <img src="/images/logo-justkoul.svg" alt="Just Koul" style={{height:size*1.8,width:"auto",objectFit:"contain",display:"block"}}/>;
+}
+
+// ═══════════════════════════════════════
+//   LEGAL MODALS + COOKIE BANNER
+// ═══════════════════════════════════════
+const LEGAL_CONTENT={
+  mentions:{
+    title:"Mentions Légales",
+    body:`Éditeur du site : Just Koul
+Activité : Traiteur scolaire et événementiel
+Localisation : Agadir, Maroc
+Téléphone : 06 33 95 87 60
+Email : contact@just-koul.ma
+Instagram : @just_koul / @just_koulbuffet
+
+Hébergement : Vercel Inc.
+440 N Barranca Ave #4133
+Covina, CA 91723, États-Unis
+https://vercel.com
+
+Ce site a été développé en 2026.`,
+  },
+  cgv:{
+    title:"Conditions Générales de Vente",
+    sections:[
+      {title:"1. SERVICES PROPOSÉS",text:`Just Koul propose deux types de services :\n· Cantine scolaire : livraison de repas du lundi au jeudi dans les écoles d'Agadir\n· Buffets événementiels : prestations traiteur sur mesure pour tout type d'événement`},
+      {title:"2. TARIFS CANTINE",text:`· À la commande : 49 DH / 56 DH (complet)\n· Forfait semaine : 176 DH / 200 DH\n· Forfait mensuel : 688 DH / 770 DH\n· Forfait trimestriel : 1 950 DH / 2 200 DH\nRéductions fratrie : -10% (2 enfants), -20% (3), -30% (4 enfants et plus)`},
+      {title:"3. INSCRIPTION ET COMMANDE",text:`L'inscription s'effectue via le formulaire en ligne ou par WhatsApp. Elle est confirmée après validation par l'équipe Just Koul et réception du paiement.`},
+      {title:"4. PAIEMENT",text:`Modes acceptés : virement bancaire (Banque Populaire du Maroc, RIB : 101 810 0004800078601 34) ou espèces.\nAucun paiement par carte bancaire.\nLe paiement est dû avant le début de la période.`},
+      {title:"5. LIVRAISON",text:`Les repas sont livrés entre 11h30 et 13h00, du lundi au jeudi. Pas de livraison les jours fériés et pendant les vacances scolaires.\nLa livraison est incluse pour les 4 écoles partenaires (Al Hanane, Al Inbihat, Salsabil, La Chrysalide).\nSupplément de 30 DH pour toute autre école.`},
+      {title:"6. ANNULATION",text:`· Forfait semaine : annulation possible avant le dimanche 20h précédant la semaine concernée.\n· Forfait mensuel/trimestriel : aucun remboursement après le début de la période.\nJust Koul se réserve le droit d'annuler une livraison en cas de force majeure.`},
+      {title:"7. ALLERGIES ET RÉGIMES",text:`Le client est tenu de déclarer toute allergie ou restriction alimentaire lors de l'inscription. Just Koul décline toute responsabilité en cas d'allergie non déclarée.`},
+      {title:"8. LITIGES",text:`En cas de litige, les parties s'engagent à rechercher une solution amiable. À défaut, les tribunaux d'Agadir (Maroc) seront seuls compétents.\nDroit applicable : droit marocain.`},
+    ],
+  },
+  rgpd:{
+    title:"Politique de Confidentialité",
+    sections:[
+      {title:"",text:`Conformément à la loi n° 09-08 du Maroc relative à la protection des personnes physiques à l'égard du traitement des données à caractère personnel.`},
+      {title:"1. RESPONSABLE DU TRAITEMENT",text:`Just Koul — Agadir, Maroc\nContact : 06 33 95 87 60`},
+      {title:"2. DONNÉES COLLECTÉES",text:`· Nom et prénom du parent\n· Adresse email\n· Numéro de téléphone\n· Nom et classe de l'enfant (ou des enfants)\n· École fréquentée\n· Informations de paiement (méthode uniquement)\n· Allergies ou régimes alimentaires déclarés`},
+      {title:"3. FINALITÉS DU TRAITEMENT",text:`Ces données sont collectées pour :\n· Gérer les inscriptions et abonnements cantine\n· Organiser les livraisons de repas\n· Établir les factures et suivre les paiements\n· Communiquer avec les familles inscrites`},
+      {title:"4. DURÉE DE CONSERVATION",text:`Les données sont conservées pendant la durée de l'abonnement, puis 5 ans à des fins comptables, conformément à la législation marocaine.`},
+      {title:"5. PARTAGE DES DONNÉES",text:`Just Koul ne vend ni ne partage vos données personnelles avec des tiers.\nLes données sont hébergées de manière sécurisée sur Supabase (serveurs en Union Européenne).`},
+      {title:"6. VOS DROITS",text:`Conformément à la loi 09-08, vous disposez d'un droit d'accès, de rectification et de suppression de vos données. Pour exercer ces droits, contactez-nous par WhatsApp au 06 33 95 87 60.`},
+      {title:"7. SÉCURITÉ",text:`Vos données sont protégées par des mesures de sécurité techniques (chiffrement SSL, authentification sécurisée via Supabase Auth).`},
+      {title:"8. COOKIES",text:`Ce site utilise uniquement des cookies nécessaires au fonctionnement (session de connexion).\nAucun cookie publicitaire n'est utilisé.`},
+    ],
+  },
+};
+
+function LegalModal({type,onClose}){
+  const content=LEGAL_CONTENT[type];
+  if(!content)return null;
+  return <AnimatePresence><motion.div key="legal-ov" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
+    style={{position:"fixed",inset:0,zIndex:5000,background:"rgba(0,0,0,0.6)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}
+    onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <motion.div initial={{opacity:0,y:24,scale:0.96}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:16}}
+      transition={{duration:0.3,ease:[0.22,1,0.36,1]}}
+      style={{background:C.cream,borderRadius:22,width:"100%",maxWidth:640,maxHeight:"85vh",overflowY:"auto",boxShadow:"0 24px 80px rgba(0,0,0,0.35)",fontFamily:F.sans}}>
+      <div style={{position:"sticky",top:0,background:C.cream,borderBottom:`1px solid rgba(200,135,58,0.15)`,padding:"1.2rem 1.5rem",display:"flex",justifyContent:"space-between",alignItems:"center",zIndex:1}}>
+        <h2 style={{fontFamily:F.serif,fontSize:20,color:C.green,margin:0}}>{content.title}</h2>
+        <button onClick={onClose} style={{background:"rgba(44,74,30,0.08)",border:"none",borderRadius:"50%",width:34,height:34,cursor:"pointer",fontSize:16,color:C.green}}>✕</button>
+      </div>
+      <div style={{padding:"1.4rem 1.5rem 2rem"}}>
+        {content.body&&<p style={{fontSize:13,color:C.text,lineHeight:1.9,whiteSpace:"pre-line"}}>{content.body}</p>}
+        {content.sections&&content.sections.map((s,i)=><div key={i} style={{marginBottom:16}}>
+          {s.title&&<div style={{fontFamily:F.sans,fontWeight:800,fontSize:12,color:C.green,letterSpacing:0.5,marginBottom:6,textTransform:"uppercase"}}>{s.title}</div>}
+          <p style={{fontSize:13,color:C.text,lineHeight:1.9,margin:0,whiteSpace:"pre-line"}}>{s.text}</p>
+        </div>)}
+      </div>
+    </motion.div>
+  </motion.div></AnimatePresence>;
+}
+
+function CookieBanner(){
+  const [visible,setVisible]=useState(()=>!localStorage.getItem('jk_cookies_accepted'));
+  const accept=()=>{localStorage.setItem('jk_cookies_accepted','1');setVisible(false);};
+  const decline=()=>{localStorage.setItem('jk_cookies_accepted','0');setVisible(false);};
+  if(!visible)return null;
+  return <AnimatePresence><motion.div initial={{y:100,opacity:0}} animate={{y:0,opacity:1}} exit={{y:100,opacity:0}}
+    transition={{duration:0.35,ease:[0.22,1,0.36,1]}}
+    style={{position:"fixed",bottom:0,left:0,right:0,zIndex:9999,background:"rgba(17,26,10,0.97)",padding:"14px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12,fontFamily:F.sans}}>
+    <span style={{fontSize:13,color:"rgba(255,255,255,0.85)",lineHeight:1.5,flex:1,minWidth:240}}>
+      🍪 Ce site utilise des cookies essentiels pour votre connexion et navigation. Aucun cookie publicitaire.
+    </span>
+    <div style={{display:"flex",gap:10,alignItems:"center",flexShrink:0}}>
+      <button onClick={accept} style={{background:C.green,color:C.white,border:"none",borderRadius:20,padding:"8px 20px",fontFamily:F.sans,fontWeight:700,fontSize:13,cursor:"pointer"}}>✓ Accepter</button>
+      <button onClick={decline} style={{background:"none",color:"rgba(255,255,255,0.55)",border:"none",fontFamily:F.sans,fontSize:12,cursor:"pointer",padding:"4px 8px",textDecoration:"underline"}}>Continuer sans accepter</button>
+    </div>
+  </motion.div></AnimatePresence>;
 }
 
 // ═══════════════════════════════════════
 //   PUBLIC SITE
+const BUFFET_CARDS=[
+  {title:"Mariages & Fiançailles",desc:"Buffets élégants pour célébrer vos plus beaux moments.",img:"https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=600&q=80&auto=format&fit=crop",icon:"💍",fallback:"linear-gradient(135deg,#8B5CF6,#6D28D9)"},
+  {title:"Événements Corporate",desc:"Repas professionnels pour séminaires et lancements.",img:"https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=600&q=80&auto=format&fit=crop",icon:"🏢",fallback:"linear-gradient(135deg,#2563EB,#1D4ED8)"},
+  {title:"Anniversaires & Fêtes",desc:"Tables gourmandes pour tous vos moments de célébration.",img:"https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=600&q=80&auto=format&fit=crop",icon:"🎂",fallback:"linear-gradient(135deg,#EC4899,#BE185D)"},
+  {title:"Ftour Ramadan",desc:"Buffets généreux pour vos Iftars en famille ou entre amis.",img:"https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&q=80&auto=format&fit=crop",icon:"🌙",fallback:"linear-gradient(135deg,#D97706,#B45309)"},
+  {title:"Ventes Privées",desc:"Finger food et tables garnies pour vos événements exclusifs.",img:"https://images.unsplash.com/photo-1555244162-803834f70033?w=600&q=80&auto=format&fit=crop",icon:"✨",fallback:"linear-gradient(135deg,#0D9488,#0F766E)"},
+  {title:"Cocktails Dînatoires",desc:"Service élégant et saveurs raffinées sur mesure.",img:"https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&q=80&auto=format&fit=crop",icon:"🥂",fallback:"linear-gradient(135deg,#C8873A,#92400E)"},
+];
+
 // ═══════════════════════════════════════
 function PublicSite({onLoginClick,data,setData}){
   const [scrolled,setScrolled]=useState(false);
@@ -377,6 +722,7 @@ function PublicSite({onLoginClick,data,setData}){
   const [formContact,setFormContact]=useState({prenom:"",nom:"",tel:"",email:"",school:"al-hanane",autreEcole:"",nbEnfants:1,formule:"mensuel",repasType:"pe",days:{lundi:false,mardi:false,mercredi:false,jeudi:false},typeEvent:"",dateEvent:"",nbPersonnes:"",message:""});
   const [submitted,setSubmitted]=useState(false);
   const [hoveredCat,setHoveredCat]=useState(null);
+  const [legalModal,setLegalModal]=useState(null);
   useEffect(()=>{const fn=()=>setScrolled(window.scrollY>50);window.addEventListener("scroll",fn);return()=>window.removeEventListener("scroll",fn);},[]);
   useEffect(()=>{const ids=["accueil","cantine","buffets","galerie","commander","contact"];const obs=new IntersectionObserver(en=>{en.forEach(e=>{if(e.isIntersecting)setActiveSection(e.target.id);});},{threshold:0.3});ids.forEach(id=>{const el=document.getElementById(id);if(el)obs.observe(el);});return()=>obs.disconnect();},[]);
   const scrollTo=id=>{setMobileMenu(false);document.getElementById(id)?.scrollIntoView({behavior:"smooth"});};
@@ -393,14 +739,14 @@ function PublicSite({onLoginClick,data,setData}){
   ];
 
   return (
-    <div style={{fontFamily:F.sans,background:C.white}}>
+    <><div style={{fontFamily:F.sans,background:C.white}}>
 
       {/* ── NAV ── */}
       <nav style={{position:"fixed",top:0,left:0,right:0,zIndex:100,background:scrolled?"rgba(255,255,255,0.97)":"rgba(255,255,255,0.8)",backdropFilter:"blur(16px)",borderBottom:`1px solid ${scrolled?"rgba(0,0,0,0.08)":"transparent"}`,transition:"all 0.3s",padding:"0 2rem"}}>
         <div style={{maxWidth:1280,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:70}}>
           {/* Logo */}
           <div onClick={()=>scrollTo("accueil")} style={{cursor:"pointer"}}>
-            <JustKoulLogo size={42}/>
+            <JustKoulLogo size={52} showText={false}/>
           </div>
           {/* Center links */}
           <div style={{display:"flex",gap:"2rem",alignItems:"center"}} className="nd">
@@ -484,52 +830,99 @@ function PublicSite({onLoginClick,data,setData}){
             </motion.div>
           </motion.div>
 
-          {/* RIGHT — Food visual */}
-          <motion.div initial={{opacity:0,x:40}} animate={{opacity:1,x:0}} transition={{duration:0.9,delay:0.2}} style={{position:"relative",display:"flex",justifyContent:"center",alignItems:"center",paddingBottom:"3rem"}}>
-            {/* Main circle food card */}
-            <motion.div animate={{y:[0,-10,0]}} transition={{duration:5,repeat:Infinity,ease:"easeInOut"}}
+          {/* RIGHT — Photo hero */}
+          <motion.div
+            initial={{opacity:0,x:40}}
+            animate={{opacity:1,x:0}}
+            transition={{duration:0.9,delay:0.2}}
+            style={{position:"relative",display:"flex",justifyContent:"center",
+                    alignItems:"center",paddingBottom:"3rem",minHeight:520}}>
+
+            {/* Photo principale */}
+            <motion.div
+              animate={{y:[0,-10,0]}}
+              transition={{duration:5,repeat:Infinity,ease:"easeInOut"}}
               style={{position:"relative",zIndex:2}}>
-              {/* Big circle */}
-              <div style={{width:420,height:420,borderRadius:"50%",background:`linear-gradient(145deg,#F0F9F0,#E8F5E0)`,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",boxShadow:`0 24px 80px rgba(44,74,30,0.12),0 0 0 20px rgba(44,74,30,0.04)`}}>
-                {/* Rotating ring */}
-                <motion.div animate={{rotate:360}} transition={{duration:30,repeat:Infinity,ease:"linear"}} style={{position:"absolute",inset:16,borderRadius:"50%",border:`2px dashed rgba(200,135,58,0.25)`}}/>
-                {/* Food emojis scattered */}
-                {[{e:"🥘",deg:0,r:160},{e:"🥗",deg:72,r:155},{e:"🍋",deg:144,r:158},{e:"🌿",deg:216,r:152},{e:"🍳",deg:288,r:160}].map(({e,deg,r},i)=>(
-                  <motion.div key={i} animate={{scale:[1,1.15,1],rotate:[0,deg%2===0?10:-10,0]}} transition={{duration:3+i*0.4,repeat:Infinity,ease:"easeInOut",delay:i*0.3}}
-                    style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) rotate(${deg}deg) translateY(-${r}px) rotate(-${deg}deg)`,fontSize:24,filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.1))"}}>
-                    {e}
-                  </motion.div>
-                ))}
-                {/* Center plate */}
-                <div style={{textAlign:"center",zIndex:2}}>
-                  <motion.div animate={{scale:[1,1.05,1]}} transition={{duration:3,repeat:Infinity,ease:"easeInOut"}} style={{fontSize:80,marginBottom:4,filter:"drop-shadow(0 8px 20px rgba(0,0,0,0.12))"}}>🍱</motion.div>
-                  <div style={{fontFamily:F.serif,fontWeight:700,fontSize:16,color:C.green}}>Fait maison</div>
-                  <div style={{fontFamily:F.sans,fontSize:11,color:C.textL,marginTop:2}}>Chaque jour · Livré à l'école</div>
+              <div style={{width:420,height:420,borderRadius:32,overflow:"hidden",
+                           boxShadow:"0 32px 80px rgba(0,0,0,0.2)",position:"relative"}}>
+                <img
+                  src="/images/hero-plat.jpg"
+                  alt="Plat Just Koul"
+                  style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}
+                />
+                {/* Overlay bas avec badges */}
+                <div style={{position:"absolute",bottom:0,left:0,right:0,
+                             background:"linear-gradient(to top,rgba(0,0,0,0.6) 0%,transparent 100%)",
+                             padding:"20px 16px",display:"flex",gap:10,alignItems:"center"}}>
+                  <div style={{background:"#C8873A",borderRadius:20,padding:"6px 14px",
+                               fontFamily:F.serif,fontWeight:700,fontSize:13,color:"white"}}>
+                    dès 49 DH
+                  </div>
+                  <div style={{background:"rgba(255,255,255,0.9)",borderRadius:20,
+                               padding:"6px 14px",fontFamily:F.sans,fontWeight:700,
+                               fontSize:11,color:"#2C4A1E"}}>
+                    🌿 100% fait maison
+                  </div>
                 </div>
               </div>
             </motion.div>
 
-            {/* Floating cards */}
-            <motion.div initial={{opacity:0,x:-20}} animate={{opacity:1,x:0}} transition={{delay:0.6}} animate={{y:[0,-6,0],opacity:1}} style={{position:"absolute",top:"12%",left:"-4%",background:C.white,borderRadius:18,padding:"12px 16px",boxShadow:"0 12px 40px rgba(0,0,0,0.12)",display:"flex",alignItems:"center",gap:10,zIndex:3,border:`1px solid rgba(0,0,0,0.06)`}}>
-              <div style={{width:40,height:40,borderRadius:12,background:"#F0F9F0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>✅</div>
+            {/* Carte livraison en haut à gauche */}
+            <motion.div initial={{opacity:0,x:-20}} animate={{opacity:1,x:0}}
+              transition={{delay:0.7}}
+              style={{position:"absolute",top:"8%",left:"-5%",background:"white",
+                      borderRadius:18,padding:"12px 16px",
+                      boxShadow:"0 12px 40px rgba(0,0,0,0.12)",
+                      display:"flex",alignItems:"center",gap:10,zIndex:4,
+                      border:"1px solid rgba(0,0,0,0.06)"}}>
+              <div style={{width:36,height:36,borderRadius:10,background:"#F0F9F0",
+                           display:"flex",alignItems:"center",justifyContent:"center",
+                           fontSize:18}}>✅</div>
               <div>
-                <div style={{fontFamily:F.sans,fontWeight:800,fontSize:13,color:"#1A1A1A"}}>Livraison confirmée</div>
-                <div style={{fontFamily:F.sans,fontSize:11,color:"#999"}}>Youssef Benali · 12:15</div>
+                <div style={{fontWeight:800,fontSize:12,color:"#1A1A1A"}}>
+                  Livraison confirmée
+                </div>
+                <div style={{fontSize:10,color:"#999",marginTop:1}}>
+                  Youssef Benali · 12:15
+                </div>
               </div>
             </motion.div>
 
-            <motion.div initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} transition={{delay:0.8}} style={{position:"absolute",bottom:"18%",right:"-4%",background:C.white,borderRadius:18,padding:"12px 16px",boxShadow:"0 12px 40px rgba(0,0,0,0.12)",zIndex:3,border:`1px solid rgba(0,0,0,0.06)`}}>
-              <div style={{fontFamily:F.sans,fontWeight:700,fontSize:11,color:C.textL,marginBottom:6}}>⭐ Menu du jour</div>
-              <div style={{fontFamily:F.serif,fontWeight:700,fontSize:14,color:C.green}}>Poulet rôti & riz pilaf</div>
-              <div style={{fontFamily:F.sans,fontSize:11,color:C.textL,marginTop:3}}>+ Salade + Yaourt maison</div>
-              <div style={{marginTop:8,background:C.gold,borderRadius:10,padding:"5px 10px",display:"inline-block",fontFamily:F.serif,fontWeight:700,fontSize:13,color:C.white}}>dès 49 DH</div>
+            {/* Carte menu en bas à droite */}
+            <motion.div initial={{opacity:0,x:20}} animate={{opacity:1,x:0}}
+              transition={{delay:0.9}}
+              style={{position:"absolute",bottom:"10%",right:"-5%",background:"white",
+                      borderRadius:18,padding:"14px 16px",
+                      boxShadow:"0 12px 40px rgba(0,0,0,0.12)",
+                      zIndex:4,border:"1px solid rgba(0,0,0,0.06)",maxWidth:200}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#C8873A",marginBottom:4}}>
+                ⭐ Menu du jour
+              </div>
+              <div style={{fontFamily:F.serif,fontWeight:700,fontSize:14,
+                           color:"#2C4A1E",lineHeight:1.3}}>
+                Poulet rôti & riz pilaf
+              </div>
+              <div style={{fontSize:11,color:"#6B5240",marginTop:3}}>
+                + Salade + Yaourt maison
+              </div>
             </motion.div>
 
-            {/* Prix bubble */}
-            <motion.div animate={{scale:[1,1.08,1]}} transition={{duration:2.5,repeat:Infinity}} style={{position:"absolute",top:"56%",left:"-6%",width:64,height:64,borderRadius:"50%",background:`linear-gradient(135deg,${C.gold},${C.goldL})`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",boxShadow:`0 8px 24px rgba(200,135,58,0.35)`,zIndex:3}}>
-              <div style={{fontFamily:F.serif,fontWeight:800,fontSize:13,color:C.white,lineHeight:1}}>49</div>
-              <div style={{fontFamily:F.sans,fontSize:8,color:"rgba(255,255,255,0.85)"}}>DH</div>
+            {/* Bubble rating */}
+            <motion.div animate={{scale:[1,1.08,1]}}
+              transition={{duration:2.5,repeat:Infinity}}
+              style={{position:"absolute",top:"50%",left:"-8%",
+                      background:"linear-gradient(135deg,#C8873A,#E8A555)",
+                      borderRadius:"50%",width:68,height:68,
+                      display:"flex",flexDirection:"column",
+                      alignItems:"center",justifyContent:"center",
+                      boxShadow:"0 8px 24px rgba(200,135,58,0.4)",zIndex:4}}>
+              <div style={{fontFamily:F.serif,fontWeight:800,fontSize:14,
+                           color:"white",lineHeight:1}}>★ 4.9</div>
+              <div style={{fontSize:9,color:"rgba(255,255,255,0.85)",marginTop:1}}>
+                avis
+              </div>
             </motion.div>
+
           </motion.div>
         </div>
 
@@ -612,13 +1005,36 @@ function PublicSite({onLoginClick,data,setData}){
             <motion.div variants={fadeUp} style={{fontFamily:F.sans,fontSize:11,fontWeight:800,letterSpacing:3,textTransform:"uppercase",color:C.gold,marginBottom:10}}>🎊 Sur mesure</motion.div>
             <motion.h2 variants={fadeUp} style={{fontFamily:F.serif,fontSize:"clamp(2rem,4vw,3rem)",color:C.green,margin:0}}>Buffets & Événements</motion.h2>
           </motion.div>
-          <motion.div variants={staggerFast} initial="hidden" whileInView="show" viewport={VP} style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(250px,1fr))",gap:16,marginBottom:"3rem"}}>
-            {[{icon:"💍",title:"Mariages & Fiançailles",desc:"Buffets élégants pour célébrer vos plus beaux moments."},{icon:"🏢",title:"Événements Corporate",desc:"Repas professionnels pour séminaires et lancements."},{icon:"🎂",title:"Anniversaires & Fêtes",desc:"Tables gourmandes pour tous vos moments de célébration."},{icon:"🌙",title:"Ftour Ramadan",desc:"Buffets généreux pour vos Iftars en famille ou entre amis."},{icon:"✨",title:"Ventes Privées",desc:"Finger food et tables garnies pour vos événements exclusifs."},{icon:"🥂",title:"Cocktails Dînatoires",desc:"Service élégant et saveurs raffinées sur mesure."}].map(p=>(
-              <motion.div key={p.title} variants={fadeUp} whileHover={{y:-6,boxShadow:`0 16px 40px rgba(44,74,30,0.1)`,borderColor:C.gold}}
-                style={{background:C.lcream,borderRadius:16,padding:"1.4rem",border:`1px solid rgba(200,135,58,0.15)`,cursor:"default"}}>
-                <div style={{fontSize:36,marginBottom:8}}>{p.icon}</div>
-                <h3 style={{fontFamily:F.serif,fontSize:16,color:C.green,marginBottom:5}}>{p.title}</h3>
-                <p style={{fontFamily:F.sans,fontSize:12,color:C.textL,lineHeight:1.6,margin:0}}>{p.desc}</p>
+          <motion.div variants={staggerFast} initial="hidden" whileInView="show" viewport={VP} style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:18,marginBottom:"3rem"}}>
+            {BUFFET_CARDS.map(p=>(
+              <motion.div key={p.title} variants={fadeUp}
+                whileHover={{scale:1.03,boxShadow:"0 24px 56px rgba(0,0,0,0.22)"}}
+                transition={{duration:0.3,ease:[0.22,1,0.36,1]}}
+                style={{height:260,borderRadius:20,overflow:"hidden",position:"relative",cursor:"default",
+                  backgroundImage:`url(${p.img})`,backgroundSize:"cover",backgroundPosition:"center",
+                  background:p.fallback}}>
+                {/* image réelle par dessus le fallback gradient */}
+                <img src={p.img} alt={p.title}
+                  style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",objectFit:"cover",display:"block"}}
+                  onError={e=>{e.currentTarget.style.display="none";}}/>
+                {/* overlay dégradé sombre */}
+                <div style={{position:"absolute",top:0,left:0,right:0,bottom:0,
+                  background:"linear-gradient(to top,rgba(0,0,0,0.75) 0%,rgba(0,0,0,0.2) 50%,rgba(0,0,0,0.1) 100%)"}}/>
+                {/* badge icône haut gauche */}
+                <div style={{position:"absolute",top:16,left:16,
+                  background:"rgba(255,255,255,0.18)",backdropFilter:"blur(8px)",
+                  borderRadius:12,padding:"6px 10px",fontSize:20,border:"1px solid rgba(255,255,255,0.25)"}}>
+                  {p.icon}
+                </div>
+                {/* texte bas gauche */}
+                <div style={{position:"absolute",bottom:20,left:20,right:20}}>
+                  <h3 style={{fontFamily:F.serif,fontWeight:700,fontSize:18,color:"#FFFFFF",margin:"0 0 5px",lineHeight:1.2,textShadow:"0 1px 4px rgba(0,0,0,0.4)"}}>
+                    {p.title}
+                  </h3>
+                  <p style={{fontFamily:F.sans,fontSize:12,color:"rgba(255,255,255,0.82)",margin:0,lineHeight:1.5}}>
+                    {p.desc}
+                  </p>
+                </div>
               </motion.div>
             ))}
           </motion.div>
@@ -637,14 +1053,37 @@ function PublicSite({onLoginClick,data,setData}){
             <motion.div variants={fadeUp} style={{fontFamily:F.sans,fontSize:11,fontWeight:800,letterSpacing:3,textTransform:"uppercase",color:C.gold,marginBottom:10}}>✨ Ils nous font confiance</motion.div>
             <motion.h2 variants={fadeUp} style={{fontFamily:F.serif,fontSize:"clamp(2rem,4vw,3rem)",color:C.green,margin:0}}>Nos Réalisations</motion.h2>
           </motion.div>
-          <motion.div variants={staggerFast} initial="hidden" whileInView="show" viewport={VP} style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(170px,1fr))",gap:12,marginBottom:"3rem"}}>
-            {["💍","🏢","🎂","🌙","✨","🥂"].map((emoji,i)=>(
-              <motion.div key={i} variants={fadeUp} whileHover={{y:-4}} style={{background:C.white,borderRadius:16,padding:"1.4rem 1rem",textAlign:"center",boxShadow:`0 4px 12px rgba(0,0,0,0.05)`,border:`1px solid rgba(200,135,58,0.1)`}}>
-                <motion.div whileHover={{scale:1.2,rotate:10}} transition={{type:"spring",stiffness:300}} style={{fontSize:36,marginBottom:8}}>{emoji}</motion.div>
-                <div style={{fontFamily:F.serif,fontWeight:700,fontSize:13,color:C.green}}>{["Mariage","Corporate","Anniversaire","Ftour Ramadan","Vente privée","Cocktail"][i]}</div>
-              </motion.div>
-            ))}
-          </motion.div>
+          {data.gallery.length>0?(
+            <motion.div variants={staggerFast} initial="hidden" whileInView="show" viewport={VP} style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:16,marginBottom:"3rem"}}>
+              {data.gallery.map(g=>{
+                const isCantine=/cantine|école|ecole|enfant|repas|lunch/i.test(g.label);
+                return <motion.div key={g.id} variants={fadeUp} whileHover={{y:-6,boxShadow:"0 20px 48px rgba(0,0,0,0.12)"}} style={{background:C.white,borderRadius:18,overflow:"hidden",boxShadow:"0 4px 16px rgba(0,0,0,0.06)",border:`1px solid rgba(200,135,58,0.1)`,transition:"box-shadow 0.25s"}}>
+                  <div style={{height:180,overflow:"hidden",background:`linear-gradient(135deg,${C.lcream},#E8E0D0)`,position:"relative"}}>
+                    {g.url
+                      ?<img src={g.url} alt={g.label} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}
+                          onError={e=>{e.currentTarget.style.display="none";}}/>
+                      :<div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:42}}>🍽️</div>}
+                    <div style={{position:"absolute",top:10,right:10}}>
+                      <Badge label={isCantine?"🍱 Cantine":"🎊 Événementiel"} color={isCantine?C.green:C.gold}/>
+                    </div>
+                  </div>
+                  <div style={{padding:"0.9rem 1rem"}}>
+                    <div style={{fontFamily:F.serif,fontWeight:700,fontSize:14,color:C.green,marginBottom:3}}>{g.label}</div>
+                    <div style={{fontFamily:F.sans,fontSize:11,color:C.textL}}>{g.date}</div>
+                  </div>
+                </motion.div>;
+              })}
+            </motion.div>
+          ):(
+            <motion.div variants={staggerFast} initial="hidden" whileInView="show" viewport={VP} style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(170px,1fr))",gap:12,marginBottom:"3rem"}}>
+              {["💍","🏢","🎂","🌙","✨","🥂"].map((emoji,i)=>(
+                <motion.div key={i} variants={fadeUp} whileHover={{y:-4}} style={{background:C.white,borderRadius:16,padding:"1.4rem 1rem",textAlign:"center",boxShadow:`0 4px 12px rgba(0,0,0,0.05)`,border:`1px solid rgba(200,135,58,0.1)`}}>
+                  <motion.div whileHover={{scale:1.2,rotate:10}} transition={{type:"spring",stiffness:300}} style={{fontSize:36,marginBottom:8}}>{emoji}</motion.div>
+                  <div style={{fontFamily:F.serif,fontWeight:700,fontSize:13,color:C.green}}>{["Mariage","Corporate","Anniversaire","Ftour Ramadan","Vente privée","Cocktail"][i]}</div>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
           {approvedReviews.length>0&&<>
             <motion.h3 variants={fadeUp} initial="hidden" whileInView="show" viewport={VP} style={{textAlign:"center",fontFamily:F.serif,fontSize:20,color:C.green,marginBottom:"1.2rem"}}>Ce qu'ils disent de nous</motion.h3>
             <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={VP} style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(250px,1fr))",gap:16}}>
@@ -674,59 +1113,61 @@ function PublicSite({onLoginClick,data,setData}){
               <button key={t.id} onClick={()=>setTabCom(t.id)} style={{background:tabCom===t.id?C.gold:C.white,color:tabCom===t.id?C.white:C.textL,border:`2px solid ${C.gold}`,borderRadius:26,padding:"10px 24px",fontFamily:F.sans,fontWeight:700,fontSize:13,cursor:"pointer",transition:"all 0.2s"}}>{t.label}</button>
             ))}
           </div>
-          {submitted?<Card style={{textAlign:"center",padding:"3rem"}}>
-            <div style={{fontSize:56,marginBottom:14}}>🎉</div>
-            <h3 style={{fontFamily:F.serif,fontSize:22,color:C.green,marginBottom:10}}>Demande envoyée !</h3>
-            <p style={{fontFamily:F.sans,fontSize:14,color:C.textL,marginBottom:20}}>L'équipe Just Koul vous contacte dans les plus brefs délais.</p>
-            <div style={{background:C.lcream,borderRadius:12,padding:"0.8rem 1.2rem",display:"inline-block",marginBottom:20}}>
-              <div style={{fontFamily:F.sans,fontSize:13,color:C.textL}}>📱 WhatsApp : <strong style={{color:C.green}}>06 33 95 87 60</strong></div>
-            </div><br/>
-            <button onClick={()=>setSubmitted(false)} style={{background:"none",border:`2px solid ${C.green}`,borderRadius:18,padding:"9px 22px",fontFamily:F.sans,fontWeight:700,color:C.green,cursor:"pointer"}}>← Nouvelle demande</button>
-          </Card>:(
-            <Card>
-              {tabCom==="cantine"?(
-                <>
-                  <h3 style={{fontFamily:F.serif,fontSize:18,color:C.green,marginBottom:"1.2rem"}}>🏫 Commander la cantine pour mon enfant</h3>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Inp label="Prénom" value={formContact.prenom} onChange={v=>hf("prenom",v)} required/><Inp label="Nom" value={formContact.nom} onChange={v=>hf("nom",v)} required/></div>
-                  <Inp label="Téléphone / WhatsApp" value={formContact.tel} onChange={v=>hf("tel",v)} required/>
-                  <Inp label="École" type="select" value={formContact.school} onChange={v=>hf("school",v)} options={SCHOOLS}/>
-                  {formContact.school==="autre"&&<Inp label="Nom de l'école" value={formContact.autreEcole} onChange={v=>hf("autreEcole",v)} placeholder="Précisez l'école"/>}
-                  <Inp label="Nombre d'enfants" type="select" value={formContact.nbEnfants} onChange={v=>hf("nbEnfants",v)} options={[1,2,3,4,5].map(n=>({id:n,label:`${n} enfant${n>1?"s":""}`}))}/>
-                  <Inp label="Formule" type="select" value={formContact.formule} onChange={v=>hf("formule",v)} options={FORMULES.map(f=>({id:f.id,label:f.label}))}/>
-                  <Inp label="Type de repas" type="select" value={formContact.repasType} onChange={v=>hf("repasType",v)} options={[{id:"pe",label:"Plat + entrée ou plat + dessert"},{id:"cpd",label:"Entrée + plat + dessert (complet)"}]}/>
-                  <div style={{marginBottom:14}}>
-                    <div style={{fontFamily:F.sans,fontWeight:700,fontSize:11,color:C.green,marginBottom:7}}>Jours souhaités</div>
-                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                      {DAYS.map(d=><label key={d} style={{display:"flex",alignItems:"center",gap:5,fontFamily:F.sans,fontSize:12,fontWeight:600,cursor:"pointer",padding:"6px 12px",borderRadius:14,background:formContact.days?.[d]?C.green:"rgba(44,74,30,0.07)",color:formContact.days?.[d]?C.white:C.green,transition:"all 0.2s"}}>
-                        <input type="checkbox" checked={formContact.days?.[d]||false} onChange={e=>hf("days",{...formContact.days,[d]:e.target.checked})} style={{display:"none"}}/>{d.charAt(0).toUpperCase()+d.slice(1)}
-                      </label>)}
+          {/* ── ONGLET CANTINE : carte de connexion ── */}
+          {tabCom==="cantine"&&(
+            <Card style={{padding:"2.5rem 2rem",textAlign:"center"}}>
+              <motion.div animate={{y:[0,-8,0]}} transition={{duration:3,repeat:Infinity,ease:"easeInOut"}} style={{fontSize:64,marginBottom:"1.2rem"}}>🍱</motion.div>
+              <h3 style={{fontFamily:F.serif,fontSize:22,color:C.green,marginBottom:10}}>Commandez depuis votre espace</h3>
+              <p style={{fontFamily:F.sans,fontSize:14,color:C.textL,maxWidth:420,margin:"0 auto 1.6rem",lineHeight:1.7}}>Pour commander des repas pour votre enfant, connectez-vous à votre espace parent ou créez un compte gratuitement.</p>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:"1.6rem",textAlign:"left"}}>
+                {[{icon:"📊",label:"Suivi des repas",desc:"Historique & livraisons"},{icon:"💳",label:"Paiement facile",desc:"Virement ou espèces"},{icon:"🗓️",label:"Menus du mois",desc:"Planification à l'avance"},{icon:"🔔",label:"Notifications",desc:"Confirmations & rappels"}].map(a=>(
+                  <div key={a.label} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"12px 14px",background:C.lcream,borderRadius:14}}>
+                    <div style={{fontSize:22,flexShrink:0}}>{a.icon}</div>
+                    <div>
+                      <div style={{fontFamily:F.sans,fontWeight:700,fontSize:13,color:C.green}}>{a.label}</div>
+                      <div style={{fontFamily:F.sans,fontSize:11,color:C.textL,marginTop:2}}>{a.desc}</div>
                     </div>
                   </div>
-                  <div style={{background:`linear-gradient(135deg,${C.green},${C.greenL})`,borderRadius:14,padding:"1rem",marginBottom:14,color:C.white,fontSize:12}}>
-                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span>Base ({formContact.nbEnfants} enfant{Number(formContact.nbEnfants)>1?"s":""})</span><span>{fmt(price.base)}</span></div>
-                    {price.discPct>0&&<div style={{display:"flex",justifyContent:"space-between",color:C.goldL}}><span>Réduction fratrie ({Math.round(price.discPct*100)}%)</span><span>−{fmt(price.disc)}</span></div>}
-                    {price.delivery>0&&<div style={{display:"flex",justifyContent:"space-between"}}><span>Livraison école autre</span><span>+{fmt(price.delivery)}</span></div>}
-                    <div style={{display:"flex",justifyContent:"space-between",borderTop:"1px solid rgba(255,255,255,0.3)",paddingTop:7,marginTop:7,fontFamily:F.serif,fontWeight:700,fontSize:16}}><span>Total</span><span style={{color:C.goldL}}>{fmt(price.total)}</span></div>
-                  </div>
-                  <Inp label="Message / Allergies" type="textarea" value={formContact.message} onChange={v=>hf("message",v)} placeholder="Allergies, questions, précisions..."/>
-                </>
-              ):(
-                <>
-                  <h3 style={{fontFamily:F.serif,fontSize:18,color:C.green,marginBottom:"1.2rem"}}>🎊 Demande de devis événement</h3>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Inp label="Prénom" value={formContact.prenom} onChange={v=>hf("prenom",v)} required/><Inp label="Nom" value={formContact.nom} onChange={v=>hf("nom",v)} required/></div>
-                  <Inp label="Téléphone / WhatsApp" value={formContact.tel} onChange={v=>hf("tel",v)} required/>
-                  <Inp label="Email" type="email" value={formContact.email} onChange={v=>hf("email",v)}/>
-                  <Inp label="Type d'événement" type="select" value={formContact.typeEvent||""} onChange={v=>hf("typeEvent",v)} options={["","Mariage / Fiançailles","Anniversaire","Corporate","Ftour Ramadan","Vente privée","Cocktail dînatoire","Autre"].map(v=>({id:v,label:v||"Sélectionnez..."}))}/>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Inp label="Date" type="date" value={formContact.dateEvent} onChange={v=>hf("dateEvent",v)}/><Inp label="Nombre de personnes" type="number" value={formContact.nbPersonnes} onChange={v=>hf("nbPersonnes",v)} placeholder="Ex: 80"/></div>
-                  <Inp label="Décrivez votre événement" type="textarea" value={formContact.message} onChange={v=>hf("message",v)} placeholder="Lieu, budget, thème, cuisine souhaitée..."/>
-                </>
-              )}
-              <Btn onClick={()=>{if(formContact.nom||formContact.prenom){setData(d=>({...d,quotes:[...d.quotes,{id:`Q${Date.now()}`,nom:`${formContact.prenom} ${formContact.nom}`,tel:formContact.tel,email:formContact.email,typeEvent:formContact.typeEvent,date:formContact.dateEvent,nbPersonnes:formContact.nbPersonnes,message:formContact.message,status:"new",createdAt:todayStr(),items:[],total:0,deposit:0,depositPaid:false,notes:""}]}));setSubmitted(true);}}} full style={{marginTop:4}}>
-                {tabCom==="cantine"?"🥡 Envoyer ma commande":"📋 Envoyer ma demande de devis"}
+                ))}
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:10,maxWidth:340,margin:"0 auto"}}>
+                <Btn onClick={onLoginClick} full>👨‍👩‍👧‍👦 Se connecter à mon espace</Btn>
+                <Btn onClick={onLoginClick} variant="outline" full>📝 Créer mon compte gratuitement</Btn>
+              </div>
+              <p style={{textAlign:"center",fontFamily:F.sans,fontSize:11,color:C.textL,marginTop:20}}>Ou WhatsApp : <a href="https://wa.me/212633958760" style={{color:C.gold,fontWeight:700,textDecoration:"none"}}>06 33 95 87 60</a></p>
+            </Card>
+          )}
+          {/* ── ONGLET DEVIS : formulaire inchangé ── */}
+          {tabCom==="devis"&&(submitted?(
+            <Card style={{textAlign:"center",padding:"3rem"}}>
+              <div style={{fontSize:56,marginBottom:14}}>🎉</div>
+              <h3 style={{fontFamily:F.serif,fontSize:22,color:C.green,marginBottom:10}}>Demande envoyée !</h3>
+              <p style={{fontFamily:F.sans,fontSize:14,color:C.textL,marginBottom:20}}>L'équipe Just Koul vous contacte dans les plus brefs délais.</p>
+              <div style={{background:C.lcream,borderRadius:12,padding:"0.8rem 1.2rem",display:"inline-block",marginBottom:20}}>
+                <div style={{fontFamily:F.sans,fontSize:13,color:C.textL}}>📱 WhatsApp : <strong style={{color:C.green}}>06 33 95 87 60</strong></div>
+              </div><br/>
+              <button onClick={()=>setSubmitted(false)} style={{background:"none",border:`2px solid ${C.green}`,borderRadius:18,padding:"9px 22px",fontFamily:F.sans,fontWeight:700,color:C.green,cursor:"pointer"}}>← Nouvelle demande</button>
+            </Card>
+          ):(
+            <Card>
+              <h3 style={{fontFamily:F.serif,fontSize:18,color:C.green,marginBottom:"1.2rem"}}>🎊 Demande de devis événement</h3>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Inp label="Prénom" value={formContact.prenom} onChange={v=>hf("prenom",v)} required/><Inp label="Nom" value={formContact.nom} onChange={v=>hf("nom",v)} required/></div>
+              <Inp label="Téléphone / WhatsApp" value={formContact.tel} onChange={v=>hf("tel",v)} required/>
+              <Inp label="Email" type="email" value={formContact.email} onChange={v=>hf("email",v)}/>
+              <Inp label="Type d'événement" type="select" value={formContact.typeEvent||""} onChange={v=>hf("typeEvent",v)} options={["","Mariage / Fiançailles","Anniversaire","Corporate","Ftour Ramadan","Vente privée","Cocktail dînatoire","Autre"].map(v=>({id:v,label:v||"Sélectionnez..."}))}/>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Inp label="Date" type="date" value={formContact.dateEvent} onChange={v=>hf("dateEvent",v)}/><Inp label="Nombre de personnes" type="number" value={formContact.nbPersonnes} onChange={v=>hf("nbPersonnes",v)} placeholder="Ex: 80"/></div>
+              <Inp label="Décrivez votre événement" type="textarea" value={formContact.message} onChange={v=>hf("message",v)} placeholder="Lieu, budget, thème, cuisine souhaitée..."/>
+              <Btn onClick={()=>{if(formContact.nom||formContact.prenom){
+                const tmp=`tmp_${Date.now()}`;
+                const newQ={id:tmp,nom:`${formContact.prenom} ${formContact.nom}`,tel:formContact.tel,email:formContact.email,typeEvent:formContact.typeEvent,date:formContact.dateEvent,nbPersonnes:formContact.nbPersonnes,message:formContact.message,status:"new",createdAt:todayStr(),items:[],total:0,deposit:0,depositPaid:false,notes:""};
+                setData(d=>({...d,quotes:[...d.quotes,newQ]}));
+                supabase.from('quotes').insert(fQ(newQ)).select().single().then(({data:row})=>{if(row)setData(d=>({...d,quotes:d.quotes.map(q=>q.id===tmp?{...q,id:row.id}:q)}));});
+                setSubmitted(true);}}} full style={{marginTop:4}}>
+                📋 Envoyer ma demande de devis
               </Btn>
               <p style={{textAlign:"center",fontFamily:F.sans,fontSize:11,color:C.textL,marginTop:12}}>Ou WhatsApp : <a href="https://wa.me/212633958760" style={{color:C.gold,fontWeight:700,textDecoration:"none"}}>06 33 95 87 60</a></p>
             </Card>
-          )}
+          ))}
         </div>
       </section>
       {/* CONTACT */}
@@ -743,21 +1184,27 @@ function PublicSite({onLoginClick,data,setData}){
               </motion.div>
             ))}
           </motion.div>
-          <motion.div variants={scaleIn} initial="hidden" whileInView="show" viewport={VP} style={{textAlign:"center",background:"rgba(255,255,255,0.06)",borderRadius:18,padding:"1.6rem 2rem",border:"1px solid rgba(255,255,255,0.1)"}}>
-            <div style={{fontFamily:F.serif,fontSize:16,color:"rgba(255,255,255,0.65)",marginBottom:14}}>Accédez à votre espace</div>
-            <div style={{display:"flex",justifyContent:"center",gap:10,flexWrap:"wrap"}}>
-              {[{icon:"👨‍👩‍👧‍👦",label:"Espace Parents"},{icon:"⚙️",label:"Espace Admin"},{icon:"🛵",label:"Espace Livreur"}].map(b=>(
-                <motion.button key={b.label} onClick={onLoginClick} whileHover={{y:-3,background:"rgba(255,255,255,0.22)"}} whileTap={{scale:0.95}}
-                  style={{display:"flex",alignItems:"center",gap:7,padding:"9px 20px",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:20,cursor:"pointer",fontFamily:F.sans,fontWeight:700,fontSize:12,color:C.white}}>
-                  <span>{b.icon}</span>{b.label}
-                </motion.button>
+          <div style={{textAlign:"center",marginTop:"1.5rem"}}>
+            <div style={{fontFamily:F.sans,fontSize:11,color:"rgba(255,255,255,0.3)",marginBottom:8}}>
+              © 2026 Just Koul · Agadir, Maroc · Fait avec ❤️ et des produits frais locaux
+            </div>
+            <div style={{display:"flex",justifyContent:"center",gap:14,flexWrap:"wrap"}}>
+              {[["mentions","Mentions légales"],["cgv","CGV"],["rgpd","Politique de confidentialité"]].map(([k,label])=>(
+                <button key={k} onClick={()=>setLegalModal(k)}
+                  style={{background:"none",border:"none",cursor:"pointer",fontFamily:F.sans,fontSize:11,color:"rgba(255,255,255,0.4)",padding:0,textDecoration:"underline",textDecorationColor:"rgba(255,255,255,0.15)"}}>
+                  {label}
+                </button>
               ))}
             </div>
-          </motion.div>
-          <div style={{textAlign:"center",marginTop:"1.5rem",fontFamily:F.sans,fontSize:11,color:"rgba(255,255,255,0.3)"}}>© 2025 Just Koul · Agadir, Maroc · Fait avec ❤️ et des produits frais locaux</div>
+          </div>
         </div>
       </section>
     </div>
+    <AnimatePresence>
+      {legalModal&&<LegalModal type={legalModal} onClose={()=>setLegalModal(null)}/>}
+    </AnimatePresence>
+    <CookieBanner/>
+    </>
   );
 }
 
@@ -771,8 +1218,8 @@ function DashLayout({color,title,subtitle,tabs,activeTab,setActiveTab,onLogout,c
     <div style={{width:collapsed?64:220,background:color||C.sidebar,display:"flex",flexDirection:"column",flexShrink:0,transition:"width 0.3s ease",overflow:"hidden"}}>
       <div style={{padding:collapsed?"1rem 0":"1.2rem 1rem",borderBottom:"1px solid rgba(255,255,255,0.07)",display:"flex",alignItems:"center",justifyContent:collapsed?"center":"space-between",gap:8}}>
         {!collapsed&&<div>
-          <div style={{fontFamily:F.serif,fontWeight:700,fontSize:15,color:C.white,lineHeight:1}}>Just Koul</div>
-          <div style={{fontSize:9,color:"rgba(255,255,255,0.4)",marginTop:2,letterSpacing:1}}>{subtitle}</div>
+          <JustKoulLogo size={40} showText={false}/>
+          <div style={{fontSize:9,color:"rgba(255,255,255,0.4)",marginTop:4,letterSpacing:1}}>{subtitle}</div>
         </div>}
         <button onClick={()=>setCollapsed(c=>!c)} style={{background:"rgba(255,255,255,0.08)",border:"none",borderRadius:8,padding:"5px 8px",cursor:"pointer",color:"rgba(255,255,255,0.6)",fontSize:14,flexShrink:0}}>
           {collapsed?"→":"←"}
@@ -982,7 +1429,42 @@ function AdminCommandes({data,setData}){
   const [filter,setFilter]=useState("all");
   const [search,setSearch]=useState("");
   const [selected,setSelected]=useState(null);
-  const val=(id,status)=>setData(d=>({...d,enrollments:d.enrollments.map(e=>e.id===id?{...e,status}:e)}));
+  const [showAddClient,setShowAddClient]=useState(false);
+  const [showAddOrder,setShowAddOrder]=useState(false);
+  const ECLIENT={parentPrenom:"",parentNom:"",tel:"",email:"",school:"al-hanane",autreEcole:"",nbEnfants:1,formule:"mensuel",repasType:"pe",days:{lundi:true,mardi:true,mercredi:true,jeudi:true},notes:""};
+  const [clientForm,setClientForm]=useState(ECLIENT);
+  const hcf=(k,v)=>setClientForm(f=>({...f,[k]:v}));
+  const EORDER={enrollId:"",childName:"",menu:"",date:todayStr(),note:""};
+  const [orderForm,setOrderForm]=useState(EORDER);
+  const hof=(k,v)=>setOrderForm(f=>({...f,[k]:v}));
+
+  const val=async(id,status)=>{
+    setData(d=>({...d,enrollments:d.enrollments.map(e=>e.id===id?{...e,status}:e)}));
+    await supabase.from('enrollments').update({status}).eq('id',id);
+    if(status==="validated"){
+      const enroll=data.enrollments.find(e=>e.id===id);
+      if(enroll?.email)await sendEmail(enroll.email,"🎉 Votre inscription est confirmée — Just Koul",emailHtmlConfirm(enroll.parentPrenom,enroll));
+    }
+  };
+
+  const saveClient=()=>{
+    const nb=Number(clientForm.nbEnfants)||1;
+    const p=calcPrice(clientForm.formule,clientForm.repasType,nb,clientForm.school);
+    const tmp=`tmp_${Date.now()}`;
+    const newE={id:tmp,parentNom:clientForm.parentNom,parentPrenom:clientForm.parentPrenom,tel:clientForm.tel,email:clientForm.email,school:clientForm.school,autreEcole:clientForm.autreEcole,children:Array.from({length:nb},(_,i)=>({nom:clientForm.parentNom,prenom:`Enfant ${i+1}`,classe:""})),formule:clientForm.formule,repasType:clientForm.repasType,days:clientForm.days,status:"validated",payStatus:"pending",payMethod:"",amount:p.total,discount:p.disc,delivery:p.delivery,invoiceValidated:false,notes:clientForm.notes,createdAt:todayStr()};
+    setData(d=>({...d,enrollments:[newE,...d.enrollments]}));
+    supabase.from('enrollments').insert(fE(newE)).select().single().then(({data:row})=>{if(row)setData(d=>({...d,enrollments:d.enrollments.map(e=>e.id===tmp?{...e,id:row.id}:e)}));});
+    setClientForm(ECLIENT);setShowAddClient(false);
+  };
+
+  const saveOrder=()=>{
+    if(!orderForm.enrollId||!orderForm.menu)return;
+    const tmp=`tmp_${Date.now()}`;
+    const newO={id:tmp,enrollId:orderForm.enrollId,date:orderForm.date,menu:orderForm.menu,delivered:false,deliveredAt:"",note:orderForm.note,childName:orderForm.childName};
+    setData(d=>({...d,orders:[newO,...d.orders]}));
+    supabase.from('orders').insert({enroll_id:orderForm.enrollId,date:orderForm.date,menu:orderForm.menu,delivered:false,note:orderForm.note,child_name:orderForm.childName}).select().single().then(({data:row})=>{if(row)setData(d=>({...d,orders:d.orders.map(o=>o.id===tmp?{...o,id:row.id}:o)}));});
+    setOrderForm(EORDER);setShowAddOrder(false);
+  };
 
   const filtered=data.enrollments.filter(e=>{
     if(filter==="pending"&&e.status!=="pending")return false;
@@ -998,6 +1480,8 @@ function AdminCommandes({data,setData}){
         {["all","pending","validated"].map(f=><button key={f} onClick={()=>setFilter(f)} style={{padding:"6px 14px",fontFamily:F.sans,fontWeight:700,fontSize:11,cursor:"pointer",border:"none",borderRadius:12,background:filter===f?C.green:"rgba(44,74,30,0.08)",color:filter===f?C.white:C.green}}>
           {{all:"Toutes",pending:"En attente",validated:"Validées"}[f]}
         </button>)}
+        <Btn small variant="gold" onClick={()=>setShowAddOrder(true)}>+ Commande</Btn>
+        <Btn small onClick={()=>setShowAddClient(true)}>+ Nouveau client</Btn>
       </div>}/>
 
     {/* Stats strip */}
@@ -1039,6 +1523,41 @@ function AdminCommandes({data,setData}){
 
     {/* Detail modal */}
     <AnimatePresence>
+      {showAddClient&&<Modal title="Nouveau client" onClose={()=>setShowAddClient(false)} wide>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <Inp label="Prénom" value={clientForm.parentPrenom} onChange={v=>hcf("parentPrenom",v)} required/>
+          <Inp label="Nom" value={clientForm.parentNom} onChange={v=>hcf("parentNom",v)} required/>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <Inp label="Téléphone" value={clientForm.tel} onChange={v=>hcf("tel",v)} required/>
+          <Inp label="Email" type="email" value={clientForm.email} onChange={v=>hcf("email",v)}/>
+        </div>
+        <Inp label="École" type="select" value={clientForm.school} onChange={v=>hcf("school",v)} options={SCHOOLS}/>
+        {clientForm.school==="autre"&&<Inp label="Nom de l'école" value={clientForm.autreEcole} onChange={v=>hcf("autreEcole",v)}/>}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <Inp label="Nombre d'enfants" type="select" value={clientForm.nbEnfants} onChange={v=>hcf("nbEnfants",v)} options={[1,2,3,4,5].map(n=>({id:n,label:`${n} enfant${n>1?"s":""}`}))}/>
+          <Inp label="Formule" type="select" value={clientForm.formule} onChange={v=>hcf("formule",v)} options={FORMULES.map(f=>({id:f.id,label:f.label}))}/>
+        </div>
+        <Inp label="Type repas" type="select" value={clientForm.repasType} onChange={v=>hcf("repasType",v)} options={[{id:"pe",label:"Plat + entrée ou dessert"},{id:"cpd",label:"Complet (entrée + plat + dessert)"}]}/>
+        <div style={{marginBottom:14}}>
+          <div style={{fontFamily:F.sans,fontWeight:700,fontSize:11,color:C.green,marginBottom:7}}>Jours</div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {DAYS.map(d=><label key={d} style={{display:"flex",alignItems:"center",gap:5,fontFamily:F.sans,fontSize:12,fontWeight:600,cursor:"pointer",padding:"6px 12px",borderRadius:14,background:clientForm.days?.[d]?C.green:"rgba(44,74,30,0.07)",color:clientForm.days?.[d]?C.white:C.green}}>
+              <input type="checkbox" checked={clientForm.days?.[d]||false} onChange={e=>hcf("days",{...clientForm.days,[d]:e.target.checked})} style={{display:"none"}}/>{d.charAt(0).toUpperCase()+d.slice(1)}
+            </label>)}
+          </div>
+        </div>
+        <Inp label="Notes" type="textarea" value={clientForm.notes} onChange={v=>hcf("notes",v)} placeholder="Allergies, informations utiles..."/>
+        <Btn onClick={saveClient} full disabled={!clientForm.parentNom||!clientForm.tel}>✓ Créer le client (statut : validé)</Btn>
+      </Modal>}
+      {showAddOrder&&<Modal title="Nouvelle commande" onClose={()=>setShowAddOrder(false)}>
+        <Inp label="Client" type="select" value={orderForm.enrollId} onChange={v=>hof("enrollId",v)} options={[{id:"",label:"Sélectionnez un client"},...data.enrollments.filter(e=>e.status==="validated").map(e=>({id:e.id,label:`${e.parentPrenom} ${e.parentNom}`}))]}/>
+        {orderForm.enrollId&&<Inp label="Enfant" type="select" value={orderForm.childName} onChange={v=>hof("childName",v)} options={[{id:"",label:"Sélectionnez un enfant"},...(data.enrollments.find(e=>e.id===orderForm.enrollId)?.children||[]).map(c=>({id:`${c.prenom} ${c.nom}`,label:`${c.prenom} ${c.nom}`}))]}/>}
+        <Inp label="Date" type="date" value={orderForm.date} onChange={v=>hof("date",v)} required/>
+        <Inp label="Menu" value={orderForm.menu} onChange={v=>hof("menu",v)} placeholder="Ex: Poulet rôti & riz pilaf" required/>
+        <Inp label="Note" value={orderForm.note} onChange={v=>hof("note",v)} placeholder="Remarques éventuelles"/>
+        <Btn onClick={saveOrder} full disabled={!orderForm.enrollId||!orderForm.menu}>✓ Créer la commande</Btn>
+      </Modal>}
       {selected&&<Modal title={`Commande — ${selected.parentPrenom} ${selected.parentNom}`} onClose={()=>setSelected(null)} wide>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
           <div>
@@ -1085,24 +1604,63 @@ function AdminStocks({data,setData}){
   const [showAdd,setShowAdd]=useState(false);
   const [editing,setEditing]=useState(null);
   const [form,setForm]=useState({name:"",category:"Protéines",unit:"kg",qty:0,minQty:5,costUnit:0,supplier:""});
+  const [saved,setSaved]=useState(false);
   const h=(k,v)=>setForm(f=>({...f,[k]:v}));
+
+  const FORM_EMPTY={name:"",category:"Protéines",unit:"kg",qty:0,minQty:5,costUnit:0,supplier:""};
+
+  const flash=()=>{setSaved(true);setTimeout(()=>setSaved(false),2000);};
+  const reloadStock=async()=>{
+    const {data:rows,error}=await supabase.from('stock').select('*');
+    if(error){console.error('stock reload error:',error);return;}
+    setData(d=>({...d,stock:(rows||[]).map(tS)}));
+  };
 
   const categories=["all",...[...new Set(data.stock.map(s=>s.category))]];
   const filtered=cat==="all"?data.stock:data.stock.filter(s=>s.category===cat);
   const alerts=data.stock.filter(s=>s.qty<=s.minQty);
   const totalValue=data.stock.reduce((s,item)=>s+item.qty*item.costUnit,0);
 
-  const saveItem=()=>{
-    if(editing){setData(d=>({...d,stock:d.stock.map(s=>s.id===editing.id?{...editing,...form,lastUpdated:todayStr()}:s)}));}
-    else{setData(d=>({...d,stock:[...d.stock,{id:`S${Date.now()}`,lastUpdated:todayStr(),...form,qty:Number(form.qty),minQty:Number(form.minQty),costUnit:Number(form.costUnit)}]}));}
-    setShowAdd(false);setEditing(null);setForm({name:"",category:"Protéines",unit:"kg",qty:0,minQty:5,costUnit:0,supplier:""});
+  const saveItem=async()=>{
+    if(editing){
+      const updated={...editing,...form,qty:Number(form.qty),minQty:Number(form.minQty),costUnit:Number(form.costUnit),lastUpdated:todayStr()};
+      setData(d=>({...d,stock:d.stock.map(s=>s.id===editing.id?updated:s)}));
+      const {error}=await supabase.from('stock').update(fS(updated)).eq('id',editing.id);
+      if(error){console.error('stock update error:',error);alert('Erreur sauvegarde : '+error.message);return;}
+    } else {
+      const {data:row,error}=await supabase.from('stock').insert(fS({...form,qty:Number(form.qty),minQty:Number(form.minQty),costUnit:Number(form.costUnit)})).select().single();
+      if(error){console.error('stock insert error:',error);alert('Erreur ajout : '+error.message);return;}
+      if(row)setData(d=>({...d,stock:[...d.stock,tS(row)]}));
+    }
+    await reloadStock();
+    flash();
+    setShowAdd(false);setEditing(null);setForm(FORM_EMPTY);
   };
-  const deleteItem=id=>setData(d=>({...d,stock:d.stock.filter(s=>s.id!==id)}));
-  const updateQty=(id,delta)=>setData(d=>({...d,stock:d.stock.map(s=>s.id===id?{...s,qty:Math.max(0,s.qty+delta),lastUpdated:todayStr()}:s)}));
+  const deleteItem=async(id)=>{
+    if(!window.confirm("Supprimer cet article du stock ?"))return;
+    setData(d=>({...d,stock:d.stock.filter(s=>s.id!==id)}));
+    const {error}=await supabase.from('stock').delete().eq('id',id);
+    if(error){console.error('stock delete error:',error);await reloadStock();return;}
+    flash();
+  };
+  const updateQty=async(id,delta)=>{
+    const item=data.stock.find(s=>s.id===id);
+    if(!item)return;
+    const newQty=Math.max(0,item.qty+delta);
+    setData(d=>({...d,stock:d.stock.map(s=>s.id===id?{...s,qty:newQty,lastUpdated:todayStr()}:s)}));
+    const {error}=await supabase.from('stock').update({qty:newQty,last_updated:new Date().toISOString()}).eq('id',id);
+    if(error){console.error('stock qty error:',error);await reloadStock();return;}
+    flash();
+  };
 
   return <div>
     <STitle icon="📦" label="Inventaire" title="Gestion des Stocks"
-      action={<Btn variant="gold" onClick={()=>{setShowAdd(true);setEditing(null);setForm({name:"",category:"Protéines",unit:"kg",qty:0,minQty:5,costUnit:0,supplier:""});}}>+ Ajouter un article</Btn>}/>
+      action={<div style={{display:"flex",gap:10,alignItems:"center"}}>
+        <AnimatePresence>
+          {saved&&<motion.div key="sv" initial={{opacity:0,x:10}} animate={{opacity:1,x:0}} exit={{opacity:0,x:10}} style={{fontFamily:F.sans,fontSize:12,fontWeight:700,color:"#16A34A",padding:"5px 12px",background:"#F0FDF4",borderRadius:12,border:"1px solid #BBF7D0",whiteSpace:"nowrap"}}>✓ Sauvegardé</motion.div>}
+        </AnimatePresence>
+        <Btn variant="gold" onClick={()=>{setShowAdd(true);setEditing(null);setForm(FORM_EMPTY);}}>+ Ajouter un article</Btn>
+      </div>}/>
 
     {/* KPIs */}
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:12,marginBottom:"1.2rem"}}>
@@ -1183,13 +1741,40 @@ function AdminEquipe({data,setData}){
   const hs=(d,v)=>setForm(f=>({...f,schedule:{...f.schedule,[d]:v}}));
 
   const saveTeam=()=>{
-    setData(d=>({...d,team:[...d.team,{id:`T${Date.now()}`,...form,salary:Number(form.salary)}]}));
+    const tmp=`tmp_${Date.now()}`;
+    const newM={id:tmp,...form,salary:Number(form.salary)};
+    setData(d=>({...d,team:[...d.team,newM]}));
+    supabase.from('team').insert(fT(newM)).select().single().then(({data:row})=>{
+      if(row)setData(d=>({...d,team:d.team.map(m=>m.id===tmp?{...m,id:row.id}:m)}));
+    });
     setShowAdd(false);
   };
-  const updateStatus=(id,status)=>setData(d=>({...d,team:d.team.map(m=>m.id===id?{...m,status}:m)}));
-  const addTask=()=>{const t={id:`TK${Date.now()}`,title:"Nouvelle tâche",assignee:data.team[0]?.id||"",dueDate:todayStr(),status:"pending",priority:"medium"};setData(d=>({...d,tasks:[...d.tasks,t]}));};
-  const updateTask=(id,k,v)=>setData(d=>({...d,tasks:d.tasks.map(t=>t.id===id?{...t,[k]:v}:t)}));
-  const deleteTask=id=>setData(d=>({...d,tasks:d.tasks.filter(t=>t.id!==id)}));
+  const updateStatus=(id,status)=>{
+    setData(d=>({...d,team:d.team.map(m=>m.id===id?{...m,status}:m)}));
+    supabase.from('team').update({status}).eq('id',id);
+  };
+  const deleteMember=(id,name)=>{
+    if(!window.confirm(`Supprimer ${name} de l'équipe ? Cette action est irréversible.`))return;
+    setData(d=>({...d,team:d.team.filter(m=>m.id!==id)}));
+    supabase.from('team').delete().eq('id',id);
+  };
+  const addTask=()=>{
+    const tmp=`tmp_${Date.now()}`;
+    const t={id:tmp,title:"Nouvelle tâche",assignee:data.team[0]?.id||null,dueDate:todayStr(),status:"pending",priority:"medium"};
+    setData(d=>({...d,tasks:[...d.tasks,t]}));
+    supabase.from('tasks').insert(fTk(t)).select().single().then(({data:row})=>{
+      if(row)setData(d=>({...d,tasks:d.tasks.map(tk=>tk.id===tmp?{...tk,id:row.id}:tk)}));
+    });
+  };
+  const taskKeyMap={title:'title',assignee:'assignee',status:'status',priority:'priority',dueDate:'due_date'};
+  const updateTask=(id,k,v)=>{
+    setData(d=>({...d,tasks:d.tasks.map(t=>t.id===id?{...t,[k]:v}:t)}));
+    supabase.from('tasks').update({[taskKeyMap[k]||k]:v}).eq('id',id);
+  };
+  const deleteTask=id=>{
+    setData(d=>({...d,tasks:d.tasks.filter(t=>t.id!==id)}));
+    supabase.from('tasks').delete().eq('id',id);
+  };
 
   const roles={primary:{label:"Cuisinière principale",icon:"👩‍🍳"},assistant:{label:"Assistante cuisine",icon:"👩‍🍳"},livreur:{label:"Livreur",icon:"🛵"},commercial:{label:"Commercial(e)",icon:"👩‍💼"}};
 
@@ -1232,10 +1817,11 @@ function AdminEquipe({data,setData}){
                     ))}
                   </div>
                   {m.note&&<div style={{fontSize:11,color:C.textL,marginTop:6,fontStyle:"italic"}}>{m.note}</div>}
-                  <div style={{display:"flex",gap:6,marginTop:10}}>
+                  <div style={{display:"flex",gap:6,marginTop:10,flexWrap:"wrap"}}>
                     {["active","off","sick"].map(s=><Btn key={s} small variant={m.status===s?"primary":"ghost"} onClick={()=>updateStatus(m.id,s)}>
                       {{active:"✅ Actif",off:"🏖️ Congé",sick:"🤒 Malade"}[s]}
                     </Btn>)}
+                    <Btn small variant="danger" onClick={()=>deleteMember(m.id,`${m.prenom} ${m.nom}`)}>🗑</Btn>
                   </div>
                 </div>
               </div>
@@ -1342,16 +1928,107 @@ function AdminFactures({data,setData}){
   const totalPaid=data.invoices.filter(i=>i.status==="paid").reduce((s,i)=>s+(i.total||0),0);
   const totalPending=data.invoices.filter(i=>i.status==="pending"||i.status==="partial").reduce((s,i)=>s+(i.total||0),0);
 
-  const validateInvoice=id=>setData(d=>({...d,invoices:d.invoices.map(i=>i.id===id?{...i,status:"paid",paidDate:todayStr()}:i)}));
-  const updateEnrollInvoice=id=>setData(d=>({...d,enrollments:d.enrollments.map(e=>e.id===id?{...e,invoiceValidated:true}:e)}));
+  const validateInvoice=id=>{
+    setData(d=>({...d,invoices:d.invoices.map(i=>i.id===id?{...i,status:"paid",paidDate:todayStr()}:i)}));
+    supabase.from('invoices').update({status:'paid',paid_date:todayStr()}).eq('id',id);
+  };
+  const updateEnrollInvoice=id=>{
+    setData(d=>({...d,enrollments:d.enrollments.map(e=>e.id===id?{...e,invoiceValidated:true}:e)}));
+    supabase.from('enrollments').update({invoice_validated:true}).eq('id',id);
+  };
 
   const downloadInvoice=(inv)=>{
-    const lines=inv.items.map(it=>`${it.desc.padEnd(40)} x${it.qty}  ${fmt(it.unit).padStart(12)}  ${fmt(it.total).padStart(12)}`).join("\n");
-    const content=`${"═".repeat(60)}\n  JUST KOUL — FACTURE\n${"═".repeat(60)}\nN° ${inv.id}  |  Date: ${inv.issueDate}  |  Échéance: ${inv.dueDate}\n${"─".repeat(60)}\nClient: ${inv.clientNom}\nTél: ${inv.clientTel}\n${"─".repeat(60)}\nDÉTAIL:\n${lines}\n${"─".repeat(60)}\nSous-total : ${fmt(inv.subtotal)}\nRéduction  : ${fmt(inv.discount||0)}\n${"═".repeat(60)}\nTOTAL      : ${fmt(inv.total)}\nStatut     : ${inv.status==="paid"?"PAYÉE ✓":"EN ATTENTE"}\n${"─".repeat(60)}\nMerci de votre confiance !\nJust Koul · Agadir · +212 6 33 95 87 60\nInstagram : @just_koul\n${"═".repeat(60)}`;
-    const blob=new Blob([content],{type:"text/plain"});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement("a");a.href=url;a.download=`Facture_${inv.id}_${inv.clientNom.replace(" ","_")}.txt`;a.click();
-    URL.revokeObjectURL(url);
+    const doc=new jsPDF();
+    const pg=doc.internal.pageSize;
+    const W=pg.getWidth();
+    let y=22;
+    // ── EN-TÊTE ──
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(28);
+    doc.setTextColor(44,74,30);
+    doc.text("JUST KOUL",W/2,y,{align:"center"});
+    y+=9;
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(11);
+    doc.setTextColor(200,135,58);
+    doc.text("Eat · Enjoy · Repeat",W/2,y,{align:"center"});
+    y+=5;
+    doc.setDrawColor(200,135,58);doc.setLineWidth(0.8);
+    doc.line(15,y,W-15,y);
+    y+=6;
+    doc.setFontSize(9);doc.setTextColor(107,82,64);
+    doc.text("Agadir, Maroc  |  06 33 95 87 60  |  @just_koul",W/2,y,{align:"center"});
+    y+=10;
+    // ── BLOC FACTURE ──
+    doc.setFont("helvetica","bold");doc.setFontSize(18);doc.setTextColor(44,74,30);
+    doc.text(`FACTURE N° ${inv.id}`,15,y);
+    y+=8;
+    const isPaid=inv.status==="paid";
+    doc.setFontSize(11);doc.setFont("helvetica","normal");doc.setTextColor(60,60,60);
+    doc.text(`Date d’émission : ${inv.issueDate||"-"}`,15,y);
+    doc.text(`Échéance : ${inv.dueDate||"-"}`,W/2,y);
+    y+=7;
+    doc.setFont("helvetica","bold");
+    if(isPaid){doc.setTextColor(22,163,74);doc.text("STATUT : PAYÉE ✓",15,y);}
+    else{doc.setTextColor(217,119,6);doc.text("STATUT : EN ATTENTE",15,y);}
+    y+=9;
+    // ── BLOC CLIENT ──
+    doc.setDrawColor(220,210,195);doc.setLineWidth(0.3);doc.line(15,y,W-15,y);y+=6;
+    doc.setFont("helvetica","bold");doc.setFontSize(10);doc.setTextColor(44,74,30);
+    doc.text("CLIENT",15,y);y+=6;
+    doc.setFont("helvetica","normal");doc.setTextColor(42,31,20);doc.setFontSize(11);
+    doc.text(inv.clientNom,15,y);y+=5;
+    if(inv.clientTel)doc.text(`Tél : ${inv.clientTel}`,15,y),y+=5;
+    y+=4;doc.line(15,y,W-15,y);y+=7;
+    // ── TABLEAU ──
+    const cols=[100,15,30,25];const colX=[15,115,130,162];
+    doc.setFillColor(44,74,30);doc.rect(15,y-4,W-30,8,"F");
+    doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(255,255,255);
+    ["Description","Qté","Prix unit.","Total"].forEach((h,i)=>doc.text(h,colX[i],y));
+    y+=6;
+    (inv.items||[]).forEach((item,idx)=>{
+      if(y>265){doc.addPage();y=20;}
+      const bg=idx%2===0;
+      if(bg){doc.setFillColor(250,244,228);doc.rect(15,y-4,W-30,7,"F");}
+      doc.setFont("helvetica","normal");doc.setFontSize(9);
+      const isNeg=item.total<0;
+      doc.setTextColor(isNeg?192:42,isNeg?57:31,isNeg?43:20);
+      const desc=item.desc.length>50?item.desc.slice(0,48)+"…":item.desc;
+      doc.text(desc,colX[0],y);
+      doc.text(String(item.qty),colX[1],y);
+      doc.text(fmt(item.unit),colX[2],y);
+      doc.text(fmt(item.total),colX[3],y);
+      y+=7;
+    });
+    y+=3;doc.setDrawColor(200,135,58);doc.setLineWidth(0.5);doc.line(15,y,W-15,y);y+=7;
+    // Totaux
+    doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(107,82,64);
+    doc.text(`Sous-total : ${fmt(inv.subtotal)}`,W-15,y,{align:"right"});y+=6;
+    if(inv.discount>0){
+      doc.setTextColor(22,163,74);
+      doc.text(`Réduction : -${fmt(inv.discount)}`,W-15,y,{align:"right"});y+=6;
+    }
+    if(inv.deposit>0){
+      doc.setTextColor(13,148,136);
+      doc.text(`Acompte versé : -${fmt(inv.deposit)}`,W-15,y,{align:"right"});y+=6;
+    }
+    doc.setFont("helvetica","bold");doc.setFontSize(14);doc.setTextColor(44,74,30);
+    doc.text(`TOTAL TTC : ${fmt(inv.total)}`,W-15,y,{align:"right"});y+=12;
+    // ── PAIEMENT ──
+    doc.setDrawColor(220,210,195);doc.setLineWidth(0.3);doc.line(15,y,W-15,y);y+=7;
+    doc.setFont("helvetica","bold");doc.setFontSize(10);doc.setTextColor(44,74,30);
+    doc.text("MODES DE PAIEMENT ACCEPTÉS :",15,y);y+=6;
+    doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(60,60,60);
+    doc.text("Virement : Banque Populaire du Maroc",15,y);y+=5;
+    doc.text("RIB : 101 810 0004800078601 34",15,y);y+=5;
+    doc.text("Espèces : au livreur ou en centre",15,y);y+=10;
+    // ── PIED DE PAGE ──
+    const footY=doc.internal.pageSize.getHeight()-16;
+    doc.setDrawColor(200,135,58);doc.setLineWidth(0.6);doc.line(15,footY-8,W-15,footY-8);
+    doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(107,82,64);
+    doc.text("Merci de votre confiance ! Just Koul · Agadir · 06 33 95 87 60 · @just_koul",W/2,footY-3,{align:"center"});
+    doc.text("© 2026 Just Koul — Tous droits réservés",W/2,footY+3,{align:"center"});
+    doc.save(`Facture_${inv.id}_${inv.clientNom.replace(/\s/g,"_")}.pdf`);
   };
 
   const statusColors={paid:"#16A34A",pending:C.orange,partial:C.purple,overdue:C.red};
@@ -1454,7 +2131,22 @@ function AdminFactures({data,setData}){
 function AdminDevis({data,setData}){
   const [selected,setSelected]=useState(null);
   const [filter,setFilter]=useState("all");
-  const updateStatus=(id,status)=>setData(d=>({...d,quotes:d.quotes.map(q=>q.id===id?{...q,status}:q)}));
+  const [toast,setToast]=useState("");
+  const updateStatus=async(id,status)=>{
+    setData(d=>({...d,quotes:d.quotes.map(q=>q.id===id?{...q,status}:q)}));
+    await supabase.from('quotes').update({status}).eq('id',id);
+    if(status==='confirmed'){
+      const quote=data.quotes.find(q=>q.id===id);
+      if(!quote)return;
+      const{data:existing}=await supabase.from('invoices').select('id').eq('quote_id',id).maybeSingle();
+      if(!existing){
+        const dateIn30=new Date(Date.now()+30*24*60*60*1000).toISOString().split('T')[0];
+        const inv={quote_id:id,type:'evenement',client_nom:quote.nom,client_tel:quote.tel,issue_date:todayStr(),due_date:dateIn30,paid_date:null,status:quote.depositPaid?'partial':'pending',items:quote.items,subtotal:quote.total,discount:0,total:quote.total,deposit:quote.deposit,deposit_paid:quote.depositPaid,notes:`Événement : ${quote.typeEvent} — ${quote.date}`};
+        const{data:newRow}=await supabase.from('invoices').insert(inv).select().single();
+        if(newRow){setData(d=>({...d,invoices:[tI(newRow),...d.invoices]}));setToast("✅ Facture événement générée automatiquement");}
+      }
+    }
+  };
   const STATUSES=["new","replied","confirmed","done","cancelled"];
   const filtered=filter==="all"?data.quotes:data.quotes.filter(q=>q.status===filter);
   const pipelineCount=st=>data.quotes.filter(q=>q.status===st).length;
@@ -1554,6 +2246,7 @@ function AdminDevis({data,setData}){
         </div>
       </Modal>}
     </AnimatePresence>
+    <AnimatePresence>{toast&&<Toast msg={toast} onClose={()=>setToast("")}/>}</AnimatePresence>
   </div>;
 }
 
@@ -1564,8 +2257,19 @@ function AdminMenus({data,setData}){
   const [adding,setAdding]=useState(false);
   const [nm,setNm]=useState({month:6,year:2025,weeks:Array(4).fill(null).map(()=>({lundi:"",mardi:"",mercredi:"",jeudi:""}))});
   const upd=(wi,d,v)=>setNm(m=>({...m,weeks:m.weeks.map((w,i)=>i===wi?{...w,[d]:v}:w)}));
-  const save=()=>{setData(d=>({...d,monthMenus:[...d.monthMenus,{...nm,id:`M${Date.now()}`,label:`${MONTHS[nm.month-1]} ${nm.year}`}]}));setAdding(false);};
-  const deleteMenu=id=>setData(d=>({...d,monthMenus:d.monthMenus.filter(m=>m.id!==id)}));
+  const save=()=>{
+    const tmp=`tmp_${Date.now()}`;
+    const newM={...nm,id:tmp,label:`${MONTHS[nm.month-1]} ${nm.year}`};
+    setData(d=>({...d,monthMenus:[...d.monthMenus,newM]}));
+    supabase.from('month_menus').insert({month:nm.month,year:nm.year,label:newM.label,weeks:nm.weeks}).select().single().then(({data:row})=>{
+      if(row)setData(d=>({...d,monthMenus:d.monthMenus.map(m=>m.id===tmp?{...m,id:row.id}:m)}));
+    });
+    setAdding(false);
+  };
+  const deleteMenu=id=>{
+    setData(d=>({...d,monthMenus:d.monthMenus.filter(m=>m.id!==id)}));
+    supabase.from('month_menus').delete().eq('id',id);
+  };
 
   return <div>
     <STitle icon="🍽️" label="Planification" title="Menus du mois"
@@ -1620,9 +2324,29 @@ function AdminClients({data,setData}){
   const totalChildren=data.enrollments.reduce((s,e)=>s+e.children.length,0);
   const totalRevenue=data.enrollments.filter(e=>e.payStatus==="paid").reduce((s,e)=>s+(e.amount||0),0);
 
+  const exportExcel=()=>{
+    const rows=data.enrollments.map(e=>({
+      'Nom':e.parentNom,'Prénom':e.parentPrenom,'Email':e.email,'Téléphone':e.tel,
+      'École':SCHOOLS.find(s=>s.id===e.school)?.label||e.school,
+      'Formule':FORMULES.find(f=>f.id===e.formule)?.label||e.formule,
+      'Nb enfants':e.children.length,
+      'Total (DH)':e.amount||0,
+      'Statut paiement':e.payStatus==='paid'?'Payé':'En attente',
+      'Date inscription':e.createdAt,
+    }));
+    const ws=XLSX.utils.json_to_sheet(rows);
+    ws['!cols']=[{wch:14},{wch:14},{wch:26},{wch:14},{wch:22},{wch:18},{wch:10},{wch:10},{wch:16},{wch:14}];
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Clients');
+    XLSX.writeFile(wb,`Clients_JustKoul_${todayStr()}.xlsx`);
+  };
+
   return <div>
     <STitle icon="👨‍👩‍👧" label="Base clients" title="Clients & Familles"
-      action={<input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Rechercher famille, tél, email..." style={{padding:"8px 14px",fontFamily:F.sans,fontSize:12,border:`1.5px solid rgba(200,135,58,0.3)`,borderRadius:12,outline:"none",width:250}}/>}/>
+      action={<div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Rechercher famille, tél, email..." style={{padding:"8px 14px",fontFamily:F.sans,fontSize:12,border:`1.5px solid rgba(200,135,58,0.3)`,borderRadius:12,outline:"none",width:230}}/>
+        <Btn small variant="ghost" onClick={exportExcel}>📊 Exporter Excel</Btn>
+      </div>}/>
     <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:"1.2rem"}}>
       <KpiCard icon="👨‍👩‍👧" label="Familles inscrites" value={data.enrollments.length} color={C.green}/>
       <KpiCard icon="🧒" label="Enfants total" value={totalChildren} color={C.blue}/>
@@ -1673,26 +2397,78 @@ function AdminClients({data,setData}){
 // ═══════════════════════════════════════
 function AdminGalerie({data,setData}){
   const [label,setLabel]=useState("");
-  const add=()=>{if(!label.trim())return;setData(d=>({...d,gallery:[...d.gallery,{id:`G${Date.now()}`,url:"",label,date:todayStr()}]}));setLabel("");};
+  const [uploading,setUploading]=useState(false);
+  const [uploadErr,setUploadErr]=useState("");
+  const [saved,setSaved]=useState(false);
+  const fileRef=useRef();
+
+  const reloadGallery=()=>supabase.from('gallery').select('*').order('date',{ascending:false}).then(({data:rows,error})=>{
+    if(rows)setData(d=>({...d,gallery:rows.map(tG)}));
+  });
+
+  const upload=async(file)=>{
+    if(!file)return;
+    setUploading(true);setUploadErr("");
+    const ext=file.name.split('.').pop().toLowerCase();
+    const path=`${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const {error:upErr}=await supabase.storage.from('gallery').upload(path,file,{upsert:false});
+    if(upErr){setUploading(false);setUploadErr('Erreur Storage : '+upErr.message);return;}
+    const {data:urlData}=supabase.storage.from('gallery').getPublicUrl(path);
+    const publicUrl=urlData?.publicUrl||'';
+    const lbl=label.trim()||file.name;
+    const {data:row,error:dbErr}=await supabase.from('gallery').insert({url:publicUrl,label:lbl,date:todayStr()}).select().single();
+    if(dbErr){setUploading(false);setUploadErr('Erreur DB : '+dbErr.message);return;}
+    await reloadGallery();
+    setLabel("");setUploading(false);setSaved(true);setTimeout(()=>setSaved(false),2000);
+    if(fileRef.current)fileRef.current.value="";
+  };
+
+  const remove=async(id)=>{
+    setData(d=>({...d,gallery:d.gallery.filter(x=>x.id!==id)}));
+    await supabase.from('gallery').delete().eq('id',id);
+    await reloadGallery();
+  };
+
   return <div>
-    <STitle icon="🖼️" label="Contenu" title="Galerie photos"/>
+    <STitle icon="🖼️" label="Contenu" title="Galerie photos"
+      action={<AnimatePresence>{saved&&<motion.div key="sv" initial={{opacity:0,x:8}} animate={{opacity:1,x:0}} exit={{opacity:0}} style={{fontFamily:F.sans,fontSize:12,fontWeight:700,color:"#16A34A",padding:"5px 12px",background:"#F0FDF4",borderRadius:12,border:"1px solid #BBF7D0"}}>✓ Photo ajoutée</motion.div>}</AnimatePresence>}/>
     <Card style={{marginBottom:"1.5rem"}}>
       <div style={{fontFamily:F.serif,fontSize:15,color:C.green,marginBottom:12}}>Ajouter une photo</div>
-      <div style={{display:"flex",gap:10}}><div style={{flex:1}}><Inp label="Description" value={label} onChange={setLabel} placeholder="Ex: Buffet mariage Agadir — Juin 2025"/></div><div style={{paddingTop:22}}><Btn variant="gold" onClick={add}>+ Ajouter</Btn></div></div>
+      <Inp label="Description (optionnel)" value={label} onChange={setLabel} placeholder="Ex: Buffet mariage Agadir — Juin 2025"/>
+      {uploadErr&&<div style={{color:C.red,fontSize:12,marginBottom:10,padding:"8px 12px",background:"#FEF2F2",borderRadius:8}}>⚠ {uploadErr}</div>}
+      <label style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",border:`2px dashed ${uploading?C.gold:"rgba(200,135,58,0.4)"}`,borderRadius:12,cursor:uploading?"not-allowed":"pointer",fontFamily:F.sans,fontSize:13,color:uploading?C.gold:C.textL,transition:"border-color 0.2s"}}>
+        <span style={{fontSize:22}}>{uploading?"⏳":"📷"}</span>
+        <span>{uploading?"Envoi en cours, patientez…":"Cliquer pour choisir une image (JPG, PNG, WebP)"}</span>
+        <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" style={{display:"none"}} onChange={e=>{if(e.target.files[0])upload(e.target.files[0]);}} disabled={uploading}/>
+      </label>
     </Card>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:14}}>
-      {data.gallery.map(g=><Card key={g.id} style={{padding:"1rem"}}>
-        <div style={{height:100,background:`linear-gradient(135deg,${C.lcream},#DDD)`,borderRadius:10,marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:32}}>🍽️</div>
-        <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:4}}>{g.label}</div>
-        <div style={{fontSize:11,color:C.textL,marginBottom:10}}>{g.date}</div>
-        <Btn small variant="danger" onClick={()=>setData(d=>({...d,gallery:d.gallery.filter(x=>x.id!==g.id)}))}>🗑 Supprimer</Btn>
-      </Card>)}
-    </div>
+    {data.gallery.length===0
+      ?<div style={{textAlign:"center",padding:"3rem",color:C.textL,fontFamily:F.sans,fontSize:13}}>Aucune photo — ajoutez-en une ci-dessus.</div>
+      :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:14}}>
+        {data.gallery.map(g=><Card key={g.id} style={{padding:"1rem"}}>
+          <div style={{height:130,background:`linear-gradient(135deg,${C.lcream},#DDD)`,borderRadius:10,marginBottom:10,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32}}>
+            {g.url
+              ?<img src={g.url} alt={g.label} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} onError={e=>{e.currentTarget.style.display="none";}}/>
+              :"🍽️"}
+          </div>
+          <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:4}}>{g.label||"Sans titre"}</div>
+          <div style={{fontSize:11,color:C.textL,marginBottom:10}}>{g.date}</div>
+          <Btn small variant="danger" onClick={()=>remove(g.id)}>🗑 Supprimer</Btn>
+        </Card>)}
+      </div>}
   </div>;
 }
 function AdminAvis({data,setData}){
-  const approve=id=>setData(d=>({...d,reviews:d.reviews.map(r=>r.id===id?{...r,status:"approved"}:r)}));
-  const reject=id=>setData(d=>({...d,reviews:d.reviews.filter(r=>r.id!==id)}));
+  const approve=async(id)=>{
+    await supabase.from('reviews').update({status:'approved'}).eq('id',id);
+    const{data:rows}=await supabase.from('reviews').select('*').order('date',{ascending:false});
+    if(rows)setData(d=>({...d,reviews:rows.map(tR)}));
+  };
+  const reject=async(id)=>{
+    await supabase.from('reviews').delete().eq('id',id);
+    const{data:rows}=await supabase.from('reviews').select('*').order('date',{ascending:false});
+    if(rows)setData(d=>({...d,reviews:rows.map(tR)}));
+  };
   const pending=data.reviews.filter(r=>r.status==="pending");
   const approved=data.reviews.filter(r=>r.status==="approved");
   return <div>
@@ -1711,7 +2487,26 @@ function AdminAvis({data,setData}){
   </div>;
 }
 function AdminPaiements({data,setData}){
-  const upd=(id,payStatus)=>setData(d=>({...d,enrollments:d.enrollments.map(e=>e.id===id?{...e,payStatus}:e)}));
+  const [toast,setToast]=useState("");
+  const upd=async(id,payStatus)=>{
+    setData(d=>({...d,enrollments:d.enrollments.map(e=>e.id===id?{...e,payStatus}:e)}));
+    await supabase.from('enrollments').update({pay_status:payStatus}).eq('id',id);
+    if(payStatus==='paid'){
+      const enroll=data.enrollments.find(e=>e.id===id);
+      if(!enroll)return;
+      const{data:existing}=await supabase.from('invoices').select('id').eq('enroll_id',id).maybeSingle();
+      if(!existing){
+        const gross=(enroll.amount||0)+(enroll.discount||0);
+        const items=[
+          {desc:`Forfait ${FORMULES.find(f=>f.id===enroll.formule)?.label||enroll.formule} Cantine - ${enroll.children.length} enfant(s)`,qty:1,unit:gross,total:gross},
+          ...(enroll.discount>0?[{desc:"Réduction fratrie",qty:1,unit:-(enroll.discount),total:-(enroll.discount)}]:[])
+        ];
+        const inv={enroll_id:enroll.id,type:'cantine',client_nom:`${enroll.parentPrenom} ${enroll.parentNom}`,client_tel:enroll.tel,issue_date:todayStr(),due_date:todayStr(),paid_date:todayStr(),status:'paid',items,subtotal:gross,discount:enroll.discount||0,total:enroll.amount||0,deposit:0,deposit_paid:false,notes:''};
+        const{data:newRow}=await supabase.from('invoices').insert(inv).select().single();
+        if(newRow){setData(d=>({...d,invoices:[tI(newRow),...d.invoices]}));setToast("✅ Facture générée automatiquement");}
+      }
+    }
+  };
   return <div>
     <STitle icon="💳" label="Finance" title="Statut des paiements"/>
     <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:"1.2rem"}}>
@@ -1737,6 +2532,7 @@ function AdminPaiements({data,setData}){
         </table>
       </div>
     </Card>
+    <AnimatePresence>{toast&&<Toast msg={toast} onClose={()=>setToast("")}/>}</AnimatePresence>
   </div>;
 }
 
@@ -1786,6 +2582,13 @@ function AdminSpace({data,setData,onLogout}){
 function ParentSpace({data,setData,onLogout}){
   const [tab,setTab]=useState("dashboard");
   const enroll=data.enrollments[0];
+  if(!enroll) return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",flexDirection:"column",gap:16,fontFamily:F.sans,background:C.cream}}>
+    <div style={{fontSize:48}}>🍱</div>
+    <div style={{fontFamily:F.serif,fontSize:20,color:C.green}}>Bienvenue !</div>
+    <div style={{fontFamily:F.sans,fontSize:13,color:C.textL,textAlign:"center",maxWidth:320}}>Votre compte est bien créé. Dès que l'équipe Just Koul valide votre inscription, vos données apparaîtront ici.</div>
+    <div style={{fontFamily:F.sans,fontSize:13,color:C.textL}}>WhatsApp : <strong style={{color:C.green}}>06 33 95 87 60</strong></div>
+    <button onClick={onLogout} style={{marginTop:8,background:C.green,color:"#fff",border:"none",borderRadius:20,padding:"10px 24px",fontFamily:F.sans,fontWeight:700,fontSize:13,cursor:"pointer"}}>← Retour au site</button>
+  </div>;
   const myOrders=data.orders.filter(o=>o.enrollId===enroll.id);
   const price=calcPrice(enroll.formule,enroll.repasType,enroll.children.length,enroll.school);
   const tabs=[{id:"dashboard",icon:"🏠",label:"Accueil"},{id:"inscription",icon:"📝",label:"Mon compte"},{id:"menus",icon:"🍽️",label:"Menus"},{id:"commandes",icon:"📦",label:"Mes commandes"},{id:"paiement",icon:"💳",label:"Paiement"},{id:"avis",icon:"⭐",label:"Mon avis"}];
@@ -1916,7 +2719,15 @@ function AvisParent({enroll,reviews,data,setData}){
   const [rating,setRating]=useState(myReview?.rating||0);
   const [text,setText]=useState(myReview?.text||"");
   const [sent,setSent]=useState(!!myReview);
-  const submit=()=>{const nr={id:`R${Date.now()}`,enrollId:enroll.id,parentNom:`${enroll.parentPrenom} ${enroll.parentNom[0]}.`,rating,text,status:"pending",date:todayStr()};setData(d=>({...d,reviews:[...d.reviews.filter(r=>r.enrollId!==enroll.id),nr]}));setSent(true);};
+  const submit=()=>{
+    const tmp=`tmp_${Date.now()}`;
+    const nr={id:tmp,enrollId:enroll.id,parentNom:`${enroll.parentPrenom} ${enroll.parentNom[0]}.`,rating,text,status:"pending",date:todayStr()};
+    setData(d=>({...d,reviews:[...d.reviews.filter(r=>r.enrollId!==enroll.id),nr]}));
+    supabase.from('reviews').insert(fR(nr)).select().single().then(({data:row})=>{
+      if(row)setData(d=>({...d,reviews:d.reviews.map(r=>r.id===tmp?{...r,id:row.id}:r)}));
+    });
+    setSent(true);
+  };
   const approved=reviews.filter(r=>r.status==="approved");
   return <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
     <Card>{sent?<div style={{textAlign:"center",padding:"2rem"}}><div style={{fontSize:48,marginBottom:10}}>🙏</div><div style={{fontFamily:F.serif,fontSize:17,color:C.green,marginBottom:6}}>Merci !</div><div style={{fontSize:12,color:C.textL}}>Votre avis sera publié après validation.</div></div>:(
@@ -1938,17 +2749,93 @@ function LivreurSpace({data,setData,onLogout}){
   const [note,setNote]=useState({});const [notif,setNotif]=useState(null);
   const pending=data.orders.filter(o=>!o.delivered);
   const done=data.orders.filter(o=>o.delivered);
+
+  const printTournee=()=>{
+    const today=todayStr();
+    const todayOrders=[...pending,...done].filter(o=>!o.date||o.date===today||o.date==="");
+    const allOrders=todayOrders.length>0?todayOrders:[...pending,...done];
+    const rows=allOrders.map((o,i)=>{
+      const enroll=data.enrollments.find(e=>e.id===o.enrollId);
+      const school=SCHOOLS.find(s=>s.id===enroll?.school);
+      const child=enroll?.children?.find(c=>`${c.prenom} ${enroll.parentNom}`===o.childName)||enroll?.children?.[0];
+      return `<tr>
+        <td>${i+1}</td>
+        <td><strong>${o.childName||"-"}</strong></td>
+        <td>${school?.label||enroll?.school||"-"}</td>
+        <td>${child?.classe||"-"}</td>
+        <td>${o.menu||"-"}</td>
+        <td>${o.delivered?o.deliveredAt:"___:___"}</td>
+        <td style="width:80px"></td>
+      </tr>`;
+    }).join("");
+    const win=window.open("","_blank","width=900,height=700");
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Tournée Just Koul — ${today}</title>
+    <style>
+      body{font-family:Arial,sans-serif;font-size:12px;margin:20px;color:#222;}
+      h1{font-size:20px;color:#2C4A1E;margin:0 0 2px;}
+      .subtitle{font-size:11px;color:#888;margin-bottom:16px;}
+      .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;border-bottom:2px solid #C8873A;padding-bottom:10px;}
+      .logo{font-size:22px;font-weight:bold;color:#2C4A1E;letter-spacing:-0.5px;}
+      .logo span{color:#C8873A;}
+      table{width:100%;border-collapse:collapse;margin-top:8px;}
+      th{background:#2C4A1E;color:white;padding:8px 6px;text-align:left;font-size:11px;}
+      td{border:1px solid #ccc;padding:8px 6px;vertical-align:middle;}
+      tr:nth-child(even) td{background:#FAF4E4;}
+      .footer{margin-top:16px;text-align:center;font-size:10px;color:#888;border-top:1px solid #ddd;padding-top:8px;}
+      @media print{
+        .no-print{display:none!important;}
+        body{margin:10px;}
+        h1{font-size:16px;}
+      }
+    </style></head><body>
+    <div class="header">
+      <div>
+        <div class="logo">JUST <span>KOUL</span></div>
+        <p style="margin:2px 0;font-size:10px;color:#888;">Eat · Enjoy · Repeat — Agadir, Maroc</p>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:13px;font-weight:bold;color:#2C4A1E;">BON DE LIVRAISON</div>
+        <div style="font-size:11px;color:#555;">${today}</div>
+      </div>
+    </div>
+    <h1>Tournée du ${today}</h1>
+    <p class="subtitle">${allOrders.length} livraison${allOrders.length!==1?"s":""}  au total — À compléter par le livreur</p>
+    <table>
+      <thead><tr>
+        <th style="width:30px">N°</th>
+        <th>Enfant</th><th>École</th><th>Classe</th><th>Menu</th><th>Heure</th>
+        <th style="width:90px">Signature</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="footer">
+      Total livraisons : ${allOrders.length} · Just Koul · 06 33 95 87 60 · @just_koul
+    </div>
+    <br/><div class="no-print" style="text-align:center;margin-top:16px;">
+      <button onclick="window.print();window.close();" style="background:#2C4A1E;color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:14px;cursor:pointer;font-family:Arial;">
+        🖨️ Imprimer
+      </button>
+    </div>
+    </body></html>`);
+    win.document.close();
+    win.focus();
+  };
   const validate=id=>{
     const time=`${new Date().getHours()}:${pad(new Date().getMinutes())}`;
-    setData(d=>({...d,orders:d.orders.map(o=>o.id===id?{...o,delivered:true,deliveredAt:time,note:note[id]||""}:o)}));
+    const noteVal=note[id]||"";
+    setData(d=>({...d,orders:d.orders.map(o=>o.id===id?{...o,delivered:true,deliveredAt:time,note:noteVal}:o)}));
+    supabase.from('orders').update({delivered:true,delivered_at:time,note:noteVal}).eq('id',id);
     const ord=data.orders.find(o=>o.id===id);
     setNotif(`✅ Livraison confirmée — ${ord?.childName} à ${time}`);
     setTimeout(()=>setNotif(null),4000);
   };
   return <div style={{minHeight:"100vh",background:C.lcream,fontFamily:F.sans}}>
-    <div style={{background:C.blue,color:C.white,padding:"1rem 2rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+    <div style={{background:C.blue,color:C.white,padding:"1rem 2rem",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
       <div><div style={{fontFamily:F.serif,fontSize:18,fontWeight:700}}>Just Koul · Espace Livreur</div><div style={{fontSize:11,opacity:0.75}}>🛵 {todayStr()}</div></div>
-      <button onClick={onLogout} style={{background:"rgba(255,255,255,0.15)",color:C.white,border:"none",borderRadius:10,padding:"7px 14px",cursor:"pointer",fontFamily:F.sans,fontSize:12}}>← Retour au site</button>
+      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+        <button onClick={printTournee} style={{background:"rgba(255,255,255,0.15)",color:C.white,border:"1px solid rgba(255,255,255,0.3)",borderRadius:10,padding:"7px 14px",cursor:"pointer",fontFamily:F.sans,fontSize:12,fontWeight:700}}>🖨️ Imprimer la tournée</button>
+        <button onClick={onLogout} style={{background:"rgba(255,255,255,0.1)",color:C.white,border:"none",borderRadius:10,padding:"7px 14px",cursor:"pointer",fontFamily:F.sans,fontSize:12}}>← Retour au site</button>
+      </div>
     </div>
     <AnimatePresence>
       {notif&&<motion.div initial={{y:-40,opacity:0}} animate={{y:0,opacity:1}} exit={{y:-40,opacity:0}}
@@ -2011,7 +2898,7 @@ function Chatbot(){
     if(!input.trim()||loading)return;
     const um={role:"user",content:input};setMsgs(m=>[...m,um]);setInput("");setLoading(true);
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:800,system:`Tu es l'assistant virtuel de Just Koul, traiteur à Agadir (Maroc). Réponds en français, de manière chaleureuse, concise.\nInfos: Cantine scolaire lundi-jeudi, livraison aux écoles Al Hanane, Al Inbihat, Salsabil, Chrysalide. Autre école +30 DH. Tarifs: à la commande 49-56 DH, semaine 176-200 DH, mensuel 688-770 DH, trimestriel 1950-2200 DH. Réduction fratrie: 2 enfants -10%, 3 enfants -20%, 4+ -30%. Tout fait maison. Buffets événements sur mesure. Contact: 06 33 95 87 60, @just_koul.`,messages:[...msgs,um].map(m=>({role:m.role,content:m.content}))})});
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:800,system:`Tu es l'assistant virtuel de Just Koul, traiteur à Agadir (Maroc). Réponds en français, de manière chaleureuse, concise.\nInfos: Cantine scolaire lundi-jeudi, livraison aux écoles Al Hanane, Al Inbihat, Salsabil, Chrysalide. Autre école +30 DH. Tarifs: à la commande 49-56 DH, semaine 176-200 DH, mensuel 688-770 DH, trimestriel 1950-2200 DH. Réduction fratrie: 2 enfants -10%, 3 enfants -20%, 4+ -30%. Tout fait maison. Buffets événements sur mesure. Contact: 06 33 95 87 60, @just_koul.`,messages:[...msgs,um].map(m=>({role:m.role,content:m.content}))})});
       const d=await res.json();setMsgs(m=>[...m,{role:"assistant",content:d.content?.[0]?.text||"Contactez-nous au 06 33 95 87 60 !"}]);
     }catch{setMsgs(m=>[...m,{role:"assistant",content:"Contactez-nous directement au 06 33 95 87 60 !"}]);}
     setLoading(false);
@@ -2025,7 +2912,7 @@ function Chatbot(){
       {open&&<motion.div initial={{opacity:0,y:20,scale:0.95}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:16,scale:0.95}} transition={{duration:0.28}}
         style={{position:"fixed",bottom:90,right:24,zIndex:999,width:330,maxHeight:480,background:C.white,borderRadius:20,boxShadow:"0 16px 60px rgba(0,0,0,0.2)",display:"flex",flexDirection:"column",fontFamily:F.sans,border:`1px solid rgba(200,135,58,0.2)`}}>
         <div style={{background:`linear-gradient(135deg,${C.green},${C.greenL})`,borderRadius:"20px 20px 0 0",padding:"12px 16px",display:"flex",alignItems:"center",gap:10}}>
-          <div style={{width:34,height:34,borderRadius:"50%",background:"rgba(255,255,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15}}>😊</div>
+          <JustKoulLogo size={32} showText={false}/>
           <div><div style={{fontFamily:F.serif,fontWeight:700,fontSize:14,color:C.white}}>Just Koul</div><div style={{fontSize:9,color:"rgba(255,255,255,0.7)"}}>Assistant virtuel · En ligne</div></div>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"12px",display:"flex",flexDirection:"column",gap:8,maxHeight:300}}>
@@ -2045,17 +2932,89 @@ function Chatbot(){
 }
 
 // ═══════════════════════════════════════
+//   RESET PASSWORD PAGE  (/reset-password)
+// ═══════════════════════════════════════
+function ResetPasswordPage(){
+  const [pwd,setPwd]=useState("");
+  const [pwd2,setPwd2]=useState("");
+  const [msg,setMsg]=useState("");
+  const [loading,setLoading]=useState(false);
+  const isErr=msg&&(msg.includes("Erreur")||msg.includes("différents")||msg.includes("court")||msg.includes("champs"));
+
+  const doReset=async()=>{
+    if(!pwd||!pwd2){setMsg("Remplissez les deux champs");return;}
+    if(pwd!==pwd2){setMsg("Les mots de passe sont différents");return;}
+    if(pwd.length<6){setMsg("Mot de passe trop court (min. 6 caractères)");return;}
+    setLoading(true);
+    const{error}=await supabase.auth.updateUser({password:pwd});
+    setLoading(false);
+    if(error){setMsg("Erreur : "+error.message);return;}
+    setMsg("Mot de passe mis à jour ! Vous pouvez maintenant vous connecter.");
+  };
+
+  const iS={width:"100%",padding:"12px 14px",fontFamily:F.sans,fontSize:14,background:"#FAF4E4",color:C.text,border:`1.5px solid rgba(200,135,58,0.28)`,borderRadius:12,outline:"none",boxSizing:"border-box",marginBottom:16};
+  const lS={fontFamily:F.sans,fontWeight:700,fontSize:11,color:C.green,display:"block",marginBottom:5,letterSpacing:0.3};
+
+  return (
+    <div style={{minHeight:"100vh",background:C.cream,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:F.sans,padding:"1rem"}}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;800&family=Nunito:wght@400;600;700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0;}`}</style>
+      <div style={{background:C.white,borderRadius:28,padding:"2.5rem",width:"100%",maxWidth:420,boxShadow:"0 24px 80px rgba(0,0,0,0.15)"}}>
+        <div style={{textAlign:"center",marginBottom:"1.8rem"}}>
+          <div style={{display:"flex",justifyContent:"center",marginBottom:4}}>
+            <JustKoulLogo size={44} showText={false}/>
+          </div>
+          <h2 style={{fontFamily:F.serif,fontSize:22,color:C.green,margin:"1rem 0 4px"}}>Nouveau mot de passe</h2>
+          <p style={{fontSize:12,color:C.textL}}>Choisissez un mot de passe sécurisé</p>
+        </div>
+        <label style={lS}>Nouveau mot de passe <span style={{color:C.red}}>*</span></label>
+        <input style={iS} type="password" value={pwd} onChange={e=>setPwd(e.target.value)} placeholder="••••••••"/>
+        <label style={lS}>Confirmer le mot de passe <span style={{color:C.red}}>*</span></label>
+        <input style={{...iS,marginBottom:16}} type="password" value={pwd2} onChange={e=>setPwd2(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&doReset()}/>
+        {msg&&<div style={{fontSize:12,marginBottom:14,padding:"10px 12px",background:isErr?"#FEF2F2":"#F0FDF4",borderRadius:10,color:isErr?C.red:"#16A34A"}}>{msg}</div>}
+        <Btn onClick={doReset} full disabled={loading}>{loading?"En cours…":"Confirmer →"}</Btn>
+        <div style={{textAlign:"center",marginTop:14}}>
+          <a href="/" style={{fontSize:12,color:C.textL,textDecoration:"none"}}>← Retour à l'accueil</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════
 //   ROOT APP
 // ═══════════════════════════════════════
 export default function App(){
-  const [role,setRole]=useState(null);
+  const [role,setRole]=useState(()=>localStorage.getItem('jk_role'));
   const [showLogin,setShowLogin]=useState(false);
-  const [data,setData]=useState(INIT);
-  const handleLogin=r=>{setRole(r);setShowLogin(false);};
+  const [data,setData]=useState(EMPTY);
+  const [loading,setLoading]=useState(true);
+
+  useEffect(()=>{
+    loadAllData().then(d=>{setData(d);setLoading(false);}).catch(()=>setLoading(false));
+    const channel=supabase.channel('db-changes')
+      .on('postgres_changes',{event:'*',schema:'public',table:'enrollments'},()=>loadAllData().then(d=>setData(d)).catch(()=>{}))
+      .on('postgres_changes',{event:'*',schema:'public',table:'orders'},()=>loadAllData().then(d=>setData(d)).catch(()=>{}))
+      .subscribe();
+    return ()=>supabase.removeChannel(channel);
+  },[]);
+
+  const handleLogin=r=>{setRole(r);localStorage.setItem('jk_role',r);setShowLogin(false);};
+  const logout=()=>{setRole(null);localStorage.removeItem('jk_role');};
+
+  if(window.location.pathname==="/reset-password") return <ResetPasswordPage/>;
+
+  if(loading) return (
+    <div style={{position:"fixed",inset:0,background:C.cream,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:20,fontFamily:F.sans}}>
+      <motion.div animate={{rotate:360}} transition={{duration:1.2,repeat:Infinity,ease:"linear"}} style={{width:48,height:48,border:`4px solid rgba(44,74,30,0.12)`,borderTopColor:C.green,borderRadius:"50%"}}/>
+      <div style={{fontFamily:F.serif,fontSize:18,color:C.green}}>Just Koul</div>
+      <div style={{fontSize:12,color:C.textL}}>Chargement des données…</div>
+    </div>
+  );
+
   return <>
     <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,800;1,400&family=Nunito:wght@300;400;600;700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0;}body{overflow-x:hidden;}::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-thumb{background:rgba(200,135,58,0.4);border-radius:3px;}input:focus,select:focus,textarea:focus{border-color:#C8873A!important;box-shadow:0 0 0 3px rgba(200,135,58,0.1)!important;outline:none;}@media(max-width:768px){.nd{display:none!important;}.nm{display:block!important;}}`}</style>
     <AnimatePresence>
-      {showLogin&&<LoginModal key="modal" onLogin={handleLogin} onClose={()=>setShowLogin(false)}/>}
+      {showLogin&&<LoginModal key="modal" onLogin={handleLogin} onClose={()=>setShowLogin(false)} data={data}/>}
     </AnimatePresence>
     <AnimatePresence mode="wait">
       {!role?(
@@ -2064,15 +3023,15 @@ export default function App(){
         </motion.div>
       ):role==="parent"?(
         <motion.div key="parent" initial={{opacity:0,x:30}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-30}} transition={{duration:0.3}}>
-          <ParentSpace data={data} setData={setData} onLogout={()=>setRole(null)}/>
+          <ParentSpace data={data} setData={setData} onLogout={logout}/>
         </motion.div>
       ):role==="admin"?(
         <motion.div key="admin" initial={{opacity:0,x:30}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-30}} transition={{duration:0.3}}>
-          <AdminSpace data={data} setData={setData} onLogout={()=>setRole(null)}/>
+          <AdminSpace data={data} setData={setData} onLogout={logout}/>
         </motion.div>
       ):(
         <motion.div key="livreur" initial={{opacity:0,x:30}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-30}} transition={{duration:0.3}}>
-          <LivreurSpace data={data} setData={setData} onLogout={()=>setRole(null)}/>
+          <LivreurSpace data={data} setData={setData} onLogout={logout}/>
         </motion.div>
       )}
     </AnimatePresence>
