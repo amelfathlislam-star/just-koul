@@ -327,7 +327,7 @@ function KpiCard({icon,label,value,sub,color=C.green,trend}){
   </Card>;
 }
 function MiniBarChart({data,label,color=C.gold}){
-  const max=Math.max(...data);
+  const max=Math.max(...data)||1;
   return <Card>
     <div style={{fontFamily:F.sans,fontWeight:700,fontSize:12,color:C.textL,marginBottom:14}}>{label}</div>
     <div style={{display:"flex",alignItems:"flex-end",gap:6,height:80}}>
@@ -2067,7 +2067,7 @@ function AdminFactures({data,setData}){
     doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(107,82,64);
     doc.text("Merci de votre confiance ! Just Koul · Agadir · 06 33 95 87 60 · @just_koul",W/2,footY-3,{align:"center"});
     doc.text("© 2026 Just Koul — Tous droits réservés",W/2,footY+3,{align:"center"});
-    doc.save(`Facture_${inv.id}_${inv.clientNom.replace(/\s/g,"_")}.pdf`);
+    doc.save(`Facture_${inv.id}_${(inv.clientNom||"inconnu").replace(/\s/g,"_")}.pdf`);
   };
 
   const statusColors={paid:"#16A34A",pending:C.orange,partial:C.purple,overdue:C.red};
@@ -2232,7 +2232,7 @@ function AdminDevis({data,setData}){
               <select value={q.status} onChange={e=>{e.stopPropagation();updateStatus(q.id,e.target.value);}} style={{fontFamily:F.sans,fontSize:11,border:`1px solid rgba(200,135,58,0.3)`,borderRadius:8,padding:"5px 8px",cursor:"pointer",outline:"none"}} onClick={e=>e.stopPropagation()}>
                 {STATUSES.map(s=><option key={s} value={s}>{{"new":"Nouveau","replied":"Répondu","confirmed":"Confirmé","done":"Réalisé","cancelled":"Annulé"}[s]}</option>)}
               </select>
-              <a href={`https://wa.me/212${q.tel.replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{textDecoration:"none"}} onClick={e=>e.stopPropagation()}>
+              <a href={`https://wa.me/212${(q.tel||"").replace(/^0/,"")}`} target="_blank" rel="noreferrer" style={{textDecoration:"none"}} onClick={e=>e.stopPropagation()}>
                 <Btn small variant="ghost" style={{width:"100%"}}>📱 WhatsApp</Btn>
               </a>
             </div>
@@ -2763,6 +2763,7 @@ function AvisParent({enroll,reviews,data,setData}){
   const [text,setText]=useState(myReview?.text||"");
   const [sent,setSent]=useState(!!myReview);
   const submit=()=>{
+    if(!rating||!text.trim())return;
     const tmp=`tmp_${Date.now()}`;
     const nr={id:tmp,enrollId:enroll.id,parentNom:`${enroll.parentPrenom} ${enroll.parentNom[0]}.`,rating,text,status:"pending",date:todayStr()};
     setData(d=>({...d,reviews:[...d.reviews.filter(r=>r.enrollId!==enroll.id),nr]}));
