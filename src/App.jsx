@@ -24,8 +24,12 @@ const F={serif:"'Playfair Display',Georgia,serif",sans:"'Nunito',sans-serif"};
 
 // ─── CONSTANTS ───
 const SCHOOLS=[
-  {id:"al-hanane",label:"École Al Hanane",extra:0},{id:"al-inbihat",label:"École Al Inbihat",extra:0},
-  {id:"salsabil",label:"École Salsabil",extra:0},{id:"chrysalide",label:"La Chrysalide",extra:0},
+  {id:"al-hanane",label:"École Al Hanane",extra:0},
+  {id:"amal-school",label:"Amal School",extra:0},
+  {id:"smart-school",label:"Smart School",extra:0},
+  {id:"chrysalide",label:"La Chrysalide",extra:0},
+  {id:"al-inbihat",label:"École Al Inbihat",extra:0},
+  {id:"academie-bel-air",label:"Académie Bel Air",extra:0},
   {id:"autre",label:"Autre école (+30 DH)",extra:30},
 ];
 const FORMULES=[
@@ -99,7 +103,7 @@ async function sendWhatsApp(message){
 const INIT={
   enrollments:[
     {id:"E001",parentNom:"Benali",parentPrenom:"Fatima",tel:"0612345678",email:"fatima@ex.com",school:"al-hanane",autreEcole:"",children:[{nom:"Benali",prenom:"Youssef",classe:"CE2"},{nom:"Benali",prenom:"Amina",classe:"CM1"}],formule:"mensuel",repasType:"pe",days:{lundi:true,mardi:true,mercredi:true,jeudi:false},status:"validated",payStatus:"paid",payMethod:"virement",amount:1238,discount:138,delivery:0,invoiceValidated:true,createdAt:"2025-04-01"},
-    {id:"E002",parentNom:"Ouchane",parentPrenom:"Khalid",tel:"0699887766",email:"khalid@ex.com",school:"salsabil",autreEcole:"",children:[{nom:"Ouchane",prenom:"Rayan",classe:"6ème"}],formule:"semaine",repasType:"cpd",days:{lundi:true,mardi:true,mercredi:false,jeudi:true},status:"pending",payStatus:"pending",payMethod:"",amount:200,discount:0,delivery:0,invoiceValidated:false,createdAt:"2025-04-15"},
+    {id:"E002",parentNom:"Ouchane",parentPrenom:"Khalid",tel:"0699887766",email:"khalid@ex.com",school:"amal-school",autreEcole:"",children:[{nom:"Ouchane",prenom:"Rayan",classe:"6ème"}],formule:"semaine",repasType:"cpd",days:{lundi:true,mardi:true,mercredi:false,jeudi:true},status:"pending",payStatus:"pending",payMethod:"",amount:200,discount:0,delivery:0,invoiceValidated:false,createdAt:"2025-04-15"},
     {id:"E003",parentNom:"Alami",parentPrenom:"Nadia",tel:"0655443322",email:"nadia@ex.com",school:"chrysalide",autreEcole:"",children:[{nom:"Alami",prenom:"Sirine",classe:"5ème"},{nom:"Alami",prenom:"Adam",classe:"CM2"},{nom:"Alami",prenom:"Lina",classe:"CE1"}],formule:"trimestriel",repasType:"cpd",days:{lundi:true,mardi:true,mercredi:true,jeudi:true},status:"validated",payStatus:"paid",payMethod:"virement",amount:4620,discount:1540,delivery:0,invoiceValidated:true,createdAt:"2025-03-20"},
   ],
   orders:[
@@ -657,7 +661,7 @@ Ce site a été développé en 2026.`,
       {title:"2. TARIFS CANTINE",text:`· À la commande : 49 DH / 56 DH (complet)\n· Forfait semaine : 176 DH / 200 DH\n· Forfait mensuel : 688 DH / 770 DH\n· Forfait trimestriel : 1 950 DH / 2 200 DH\nRéductions fratrie : -10% (2 enfants), -20% (3), -30% (4 enfants et plus)`},
       {title:"3. INSCRIPTION ET COMMANDE",text:`L'inscription s'effectue via le formulaire en ligne ou par WhatsApp. Elle est confirmée après validation par l'équipe Just Koul et réception du paiement.`},
       {title:"4. PAIEMENT",text:`Modes acceptés : virement bancaire (Banque Populaire du Maroc, RIB : 101 810 0004800078601 34) ou espèces.\nAucun paiement par carte bancaire.\nLe paiement est dû avant le début de la période.`},
-      {title:"5. LIVRAISON",text:`Les repas sont livrés entre 11h30 et 13h00, du lundi au jeudi. Pas de livraison les jours fériés et pendant les vacances scolaires.\nLa livraison est incluse pour les 4 écoles partenaires (Al Hanane, Al Inbihat, Salsabil, La Chrysalide).\nSupplément de 30 DH pour toute autre école.`},
+      {title:"5. LIVRAISON",text:`Les repas sont livrés entre 11h30 et 13h00, du lundi au jeudi. Pas de livraison les jours fériés et pendant les vacances scolaires.\nLa livraison est incluse pour les 6 écoles partenaires (Al Hanane, Amal School, Smart School, La Chrysalide, Al Inbihat, Académie Bel Air).\nSupplément de 30 DH pour toute autre école.`},
       {title:"6. ANNULATION",text:`· Forfait semaine : annulation possible avant le dimanche 20h précédant la semaine concernée.\n· Forfait mensuel/trimestriel : aucun remboursement après le début de la période.\nJust Koul se réserve le droit d'annuler une livraison en cas de force majeure.`},
       {title:"7. ALLERGIES ET RÉGIMES",text:`Le client est tenu de déclarer toute allergie ou restriction alimentaire lors de l'inscription. Just Koul décline toute responsabilité en cas d'allergie non déclarée.`},
       {title:"8. LITIGES",text:`En cas de litige, les parties s'engagent à rechercher une solution amiable. À défaut, les tribunaux d'Agadir (Maroc) seront seuls compétents.\nDroit applicable : droit marocain.`},
@@ -839,7 +843,7 @@ function PublicSite({onLoginClick,data,setData}){
 
             {/* Stats */}
             <motion.div variants={fadeUp} className="hero-stats" style={{display:"flex",gap:32,flexWrap:"wrap"}}>
-              {[["100+","Familles servies"],["4","Écoles partenaires"],["0%","Conservateurs"],["★ 4.9","Avis clients"]].map(([val,lab])=>(
+              {[["100+","Familles servies"],["6","Écoles partenaires"],["0%","Conservateurs"],["★ 4.9","Avis clients"]].map(([val,lab])=>(
                 <div key={lab}>
                   <div style={{fontFamily:F.serif,fontWeight:800,fontSize:22,color:C.green,lineHeight:1}}>{val}</div>
                   <div style={{fontFamily:F.sans,fontSize:11,color:"#999",marginTop:2,fontWeight:600}}>{lab}</div>
@@ -1093,7 +1097,7 @@ function PublicSite({onLoginClick,data,setData}){
               {icon:"🌿",title:"100% Fait maison",text:"Chaque plat préparé le matin même dans notre cuisine à Agadir"},
               {icon:"🥩",title:"Produits frais locaux",text:"Nous sourçons nos ingrédients chez les producteurs locaux de la région Souss-Massa"},
               {icon:"✅",title:"100% Halal",text:"Tous nos plats respectent les normes halal. Aucun compromis sur la qualité"},
-              {icon:"🚚",title:"Livraison incluse",text:"La livraison est incluse dans tous nos forfaits pour les 4 écoles partenaires"},
+              {icon:"🚚",title:"Livraison incluse",text:"La livraison est incluse dans tous nos forfaits pour les 6 écoles partenaires"},
               {icon:"👨‍👩‍👧",title:"Réductions fratrie",text:"Jusqu'à -30% pour les familles nombreuses. Plus d'enfants = plus d'économies"},
               {icon:"📱",title:"Suivi en temps réel",text:"Recevez une notification WhatsApp à chaque livraison confirmée"},
             ].map(e=>(
@@ -3010,7 +3014,7 @@ function LivreurSpace({data,setData,onLogout}){
 const FAQ=[
   {q:["tarif","prix","cout","combien","formule","forfait"],r:`🍱 Nos tarifs cantine :\n• À la commande : 49 DH ou 56 DH (complet)\n• Forfait semaine : 176 DH ou 200 DH\n• Forfait mensuel : 688 DH ou 770 DH ⭐\n• Forfait trimestriel : 1 950 DH ou 2 200 DH\n\n👨‍👩‍👧 Réductions fratrie : -10% (2 enfants), -20% (3 enfants), -30% (4+)`},
   {q:["bonjour","salut","salam","bonsoir","hello","hi"],r:`Bonjour ! 👋 Bienvenue chez Just Koul !\nJe peux vous renseigner sur :\n💰 Nos tarifs\n🏫 Les écoles desservies\n🍽️ Les menus de la semaine\n💳 Les modes de paiement\n📝 Comment s'inscrire\n\nQue souhaitez-vous savoir ?`},
-  {q:["ecole","livraison","hanane","inbihat","salsabil","chrysalide","ou"],r:`🏫 Écoles desservies :\n• École Al Hanane\n• École Al Inbihat\n• École Salsabil\n• La Chrysalide\n• Autre école : +30 DH supplément\n\n🕛 Livraison entre 11h30 et 13h00, lundi au jeudi`},
+  {q:["ecole","livraison","hanane","inbihat","amal","smart","chrysalide","bel air","belair","ou"],r:`🏫 Écoles desservies :\n• École Al Hanane\n• Amal School\n• Smart School\n• La Chrysalide\n• École Al Inbihat\n• Académie Bel Air\n• Autre école : +30 DH supplément\n\n🕛 Livraison entre 11h30 et 13h00, lundi au jeudi`},
   {q:["menu","plat","manger","lundi","mardi","mercredi","jeudi","semaine","aujourd"],r:`🍽️ Menus de la semaine :\n• Lundi : Poulet rôti & riz pilaf 🍗\n• Mardi : Lasagnes maison 🍝\n• Mercredi : Filet de poisson & purée 🐟\n• Jeudi : Tajine légumes & couscous 🫕\n\nChaque repas = entrée + plat + dessert ou yaourt`},
   {q:["paiement","payer","virement","rib","espece","liquide","banque"],r:`💳 Modes de paiement :\n\n🏦 Virement bancaire :\nBanque Populaire du Maroc\nRIB : 101 810 0004800078601 34\n\n💵 Espèces : au livreur ou en centre\n\n📱 Confirmez par WhatsApp : 06 33 95 87 60`},
   {q:["allergi","halal","porc","gluten","regime","vegetar"],r:`🌿 Qualité & Allergies :\n• Tous nos plats sont 100% halal\n• Produits frais locaux, fait maison\n• Déclarez les allergies à l'inscription\n\n📱 Pour un régime spécial : 06 33 95 87 60`},
@@ -3039,7 +3043,7 @@ function Chatbot(){
     const faqAnswer=findFaqAnswer(input);
     if(faqAnswer){setMsgs(m=>[...m,{role:"assistant",content:faqAnswer}]);setLoading(false);return;}
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01"},body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:400,system:`Tu es l'assistant virtuel de Just Koul, traiteur à Agadir. Réponds en français, chaleureux, concis. Tarifs cantine: commande 49-56DH, semaine 176-200DH, mensuel 688-770DH, trimestriel 1950-2200DH. Écoles: Al Hanane, Al Inbihat, Salsabil, Chrysalide. Contact: 06 33 95 87 60.`,messages:[...msgs,um].map(m=>({role:m.role,content:m.content}))})});
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01"},body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:400,system:`Tu es l'assistant virtuel de Just Koul, traiteur à Agadir. Réponds en français, chaleureux, concis. Tarifs cantine: commande 49-56DH, semaine 176-200DH, mensuel 688-770DH, trimestriel 1950-2200DH. Écoles: Al Hanane, Amal School, Smart School, La Chrysalide, Al Inbihat, Académie Bel Air. Contact: 06 33 95 87 60.`,messages:[...msgs,um].map(m=>({role:m.role,content:m.content}))})});
       const d=await res.json();
       setMsgs(m=>[...m,{role:"assistant",content:d.content?.[0]?.text||FALLBACK_MSG}]);
     }catch{setMsgs(m=>[...m,{role:"assistant",content:FALLBACK_MSG}]);}
