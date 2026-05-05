@@ -617,21 +617,22 @@ function LoginModal({onLogin,onClose,data}){
 // ═══════════════════════════════════════
 //   LOGO SVG COMPONENT
 // ═══════════════════════════════════════
-function JustKoulLogo({size=44,showText=true,light=false}){
+function JustKoulLogo({height=48,white=false}){
+  const [err,setErr]=useState(false);
+  if(err){
+    return (
+      <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+        <div style={{width:36,height:36,borderRadius:"50%",background:white?"rgba(255,255,255,0.2)":"rgba(44,74,30,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>😊</div>
+        <div style={{lineHeight:1}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:15,color:white?"#FFFFFF":"#2C4A1E"}}>Just Koul</div>
+          <div style={{fontFamily:"Nunito,sans-serif",fontWeight:600,fontSize:8,color:white?"rgba(255,255,255,0.7)":"#C8873A",letterSpacing:2,textTransform:"uppercase"}}>Eat · Enjoy · Repeat</div>
+        </div>
+      </div>
+    );
+  }
   return (
-    <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
-      <div style={{
-        width:size,height:size,borderRadius:"50%",flexShrink:0,
-        background:light?"rgba(255,255,255,0.15)":"linear-gradient(135deg,#2C4A1E,#3D6B2C)",
-        display:"flex",alignItems:"center",justifyContent:"center",
-        fontSize:size*0.44,
-        boxShadow:light?"none":`0 2px 8px rgba(44,74,30,0.28)`
-      }}>😊</div>
-      {showText&&<div style={{lineHeight:1.1}}>
-        <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:size*0.38,color:light?"#FFFFFF":"#2C4A1E",letterSpacing:-0.3}}>Just Koul</div>
-        <div style={{fontFamily:"Nunito,sans-serif",fontWeight:600,fontSize:size*0.17,color:light?"rgba(255,255,255,0.55)":"#C8873A",letterSpacing:2,textTransform:"uppercase"}}>Eat · Enjoy · Repeat</div>
-      </div>}
-    </div>
+    <img src="/images/Eat.Enjoy.Repeat.png" alt="Just Koul" onError={()=>setErr(true)}
+      style={{height,width:"auto",objectFit:"contain",display:"block",filter:white?"brightness(0) invert(1)":"none"}}/>
   );
 }
 
@@ -768,8 +769,8 @@ function PublicSite({onLoginClick,data,setData}){
       <nav style={{position:"fixed",top:0,left:0,right:0,zIndex:100,background:scrolled?"rgba(255,255,255,0.97)":"rgba(255,255,255,0.8)",backdropFilter:"blur(16px)",borderBottom:`1px solid ${scrolled?"rgba(0,0,0,0.08)":"transparent"}`,transition:"all 0.3s",padding:"0 2rem"}}>
         <div style={{maxWidth:1280,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:70}}>
           {/* Logo */}
-          <div onClick={()=>scrollTo("accueil")} style={{cursor:"pointer"}}>
-            <JustKoulLogo size={38} showText={false}/>
+          <div onClick={()=>scrollTo("accueil")} style={{cursor:"pointer",display:"flex",alignItems:"center"}}>
+            <JustKoulLogo height={52} white={false}/>
           </div>
           {/* Center links */}
           <div style={{display:"flex",gap:"2rem",alignItems:"center"}} className="nd">
@@ -1278,6 +1279,9 @@ function PublicSite({onLoginClick,data,setData}){
       {/* CONTACT */}
       <section id="contact" style={{background:C.green,padding:"70px 2rem"}}>
         <div style={{maxWidth:1200,margin:"0 auto"}}>
+          <motion.div variants={fadeUp} initial="hidden" whileInView="show" viewport={VP} style={{display:"flex",justifyContent:"center",marginBottom:"1.2rem"}}>
+            <JustKoulLogo height={44} white={true}/>
+          </motion.div>
           <motion.h2 variants={fadeUp} initial="hidden" whileInView="show" viewport={VP} style={{fontFamily:F.serif,fontSize:"clamp(1.8rem,4vw,2.8rem)",color:C.white,margin:"0 0 2rem",textAlign:"center"}}>Nous contacter</motion.h2>
           <motion.div variants={staggerFast} initial="hidden" whileInView="show" viewport={VP} style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:18,marginBottom:"2rem"}}>
             {[{icon:"📱",label:"WhatsApp",value:"06 33 95 87 60",href:"https://wa.me/212633958760"},{icon:"📸",label:"Instagram Cantine",value:"@just_koul",href:"https://instagram.com/just_koul"},{icon:"📸",label:"Instagram Événements",value:"@entre.l.events",href:"https://www.instagram.com/entre.l.events/"},{icon:"📍",label:"Zone livraison",value:"Agadir & environs",href:null}].map(c=>(
@@ -1326,7 +1330,7 @@ function DashLayout({color,title,subtitle,tabs,activeTab,setActiveTab,onLogout,c
     <div className={`dash-sidebar${mobileOpen?" open":""}`} style={{width:collapsed?64:220,background:color||C.sidebar,display:"flex",flexDirection:"column",flexShrink:0,transition:"width 0.3s ease,transform 0.3s ease",overflow:"hidden"}}>
       <div style={{padding:collapsed?"1rem 0":"1.2rem 1rem",borderBottom:"1px solid rgba(255,255,255,0.07)",display:"flex",alignItems:"center",justifyContent:collapsed?"center":"space-between",gap:8}}>
         {!collapsed&&<div>
-          <JustKoulLogo size={32} showText={false} light={true}/>
+          <JustKoulLogo height={40} white={true}/>
           <div style={{fontSize:9,color:"rgba(255,255,255,0.4)",marginTop:4,letterSpacing:1}}>{subtitle}</div>
         </div>}
         <button onClick={()=>setCollapsed(c=>!c)} className="nd" style={{background:"rgba(255,255,255,0.08)",border:"none",borderRadius:8,padding:"5px 8px",cursor:"pointer",color:"rgba(255,255,255,0.6)",fontSize:14,flexShrink:0}}>
@@ -2955,7 +2959,10 @@ function LivreurSpace({data,setData,onLogout}){
   };
   return <div style={{minHeight:"100vh",background:C.lcream,fontFamily:F.sans}}>
     <div style={{background:C.blue,color:C.white,padding:"1rem 2rem",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
-      <div><div style={{fontFamily:F.serif,fontSize:18,fontWeight:700}}>Just Koul · Espace Livreur</div><div style={{fontSize:11,opacity:0.75}}>🛵 {todayStr()}</div></div>
+      <div style={{display:"flex",alignItems:"center",gap:14}}>
+        <JustKoulLogo height={36} white={true}/>
+        <div style={{fontSize:11,opacity:0.75,borderLeft:"1px solid rgba(255,255,255,0.25)",paddingLeft:14}}>🛵 Espace Livreur · {todayStr()}</div>
+      </div>
       <div style={{display:"flex",gap:8,alignItems:"center"}}>
         <button onClick={printTournee} style={{background:"rgba(255,255,255,0.15)",color:C.white,border:"1px solid rgba(255,255,255,0.3)",borderRadius:10,padding:"7px 14px",cursor:"pointer",fontFamily:F.sans,fontSize:12,fontWeight:700}}>🖨️ Imprimer la tournée</button>
         <button onClick={onLogout} style={{background:"rgba(255,255,255,0.1)",color:C.white,border:"none",borderRadius:10,padding:"7px 14px",cursor:"pointer",fontFamily:F.sans,fontSize:12}}>← Retour au site</button>
@@ -3058,9 +3065,9 @@ function Chatbot(){
     <AnimatePresence>
       {open&&<motion.div initial={{opacity:0,y:20,scale:0.95}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:16,scale:0.95}} transition={{duration:0.28}}
         style={{position:"fixed",bottom:90,right:24,zIndex:999,width:330,maxHeight:480,background:C.white,borderRadius:20,boxShadow:"0 16px 60px rgba(0,0,0,0.2)",display:"flex",flexDirection:"column",fontFamily:F.sans,border:`1px solid rgba(200,135,58,0.2)`}}>
-        <div style={{background:`linear-gradient(135deg,${C.green},${C.greenL})`,borderRadius:"20px 20px 0 0",padding:"12px 16px",display:"flex",alignItems:"center",gap:10}}>
-          <div style={{width:32,height:32,borderRadius:"50%",background:"rgba(255,255,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🍱</div>
-          <div><div style={{fontFamily:F.serif,fontWeight:700,fontSize:14,color:C.white}}>Just Koul</div><div style={{fontSize:9,color:"rgba(255,255,255,0.7)"}}>Assistant virtuel · En ligne</div></div>
+        <div style={{background:`linear-gradient(135deg,${C.green},${C.greenL})`,borderRadius:"20px 20px 0 0",padding:"10px 16px",display:"flex",alignItems:"center",gap:10}}>
+          <JustKoulLogo height={30} white={true}/>
+          <div style={{marginLeft:4}}><div style={{fontFamily:F.sans,fontSize:9,color:"rgba(255,255,255,0.7)"}}>Assistant virtuel · En ligne</div></div>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"12px",display:"flex",flexDirection:"column",gap:8,maxHeight:300}}>
           {msgs.map((m,i)=><div key={i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start"}}>
@@ -3108,7 +3115,7 @@ function ResetPasswordPage(){
       <div style={{background:C.white,borderRadius:28,padding:"2.5rem",width:"100%",maxWidth:420,boxShadow:"0 24px 80px rgba(0,0,0,0.15)"}}>
         <div style={{textAlign:"center",marginBottom:"1.8rem"}}>
           <div style={{display:"flex",justifyContent:"center",marginBottom:4}}>
-            <JustKoulLogo size={44} showText={false}/>
+            <JustKoulLogo height={48} white={false}/>
           </div>
           <h2 style={{fontFamily:F.serif,fontSize:22,color:C.green,margin:"1rem 0 4px"}}>Nouveau mot de passe</h2>
           <p style={{fontSize:12,color:C.textL}}>Choisissez un mot de passe sécurisé</p>
