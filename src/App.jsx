@@ -619,13 +619,16 @@ function LoginModal({onLogin,onClose,data}){
 // ═══════════════════════════════════════
 function JustKoulLogo({height=48,white=false}){
   const [err,setErr]=useState(false);
+  const circleSize=Math.round(height*0.55);
+  const fontSize=Math.round(height*0.28);
+  const subSize=Math.round(height*0.13);
   if(err){
     return (
-      <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
-        <div style={{width:36,height:36,borderRadius:"50%",background:white?"rgba(255,255,255,0.2)":"rgba(44,74,30,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>😊</div>
-        <div style={{lineHeight:1}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:15,color:white?"#FFFFFF":"#2C4A1E"}}>Just Koul</div>
-          <div style={{fontFamily:"Nunito,sans-serif",fontWeight:600,fontSize:8,color:white?"rgba(255,255,255,0.7)":"#C8873A",letterSpacing:2,textTransform:"uppercase"}}>Eat · Enjoy · Repeat</div>
+      <div style={{display:"flex",alignItems:"center",gap:Math.round(height*0.12),cursor:"pointer"}}>
+        <div style={{width:circleSize,height:circleSize,borderRadius:"50%",background:white?"rgba(255,255,255,0.2)":"rgba(44,74,30,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:Math.round(circleSize*0.5),flexShrink:0}}>😊</div>
+        <div style={{lineHeight:1.15}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize,color:white?"#FFFFFF":"#2C4A1E",letterSpacing:-0.3}}>Just Koul</div>
+          <div style={{fontFamily:"Nunito,sans-serif",fontWeight:600,fontSize:subSize,color:white?"rgba(255,255,255,0.7)":"#C8873A",letterSpacing:1.5,textTransform:"uppercase",marginTop:2}}>Eat · Enjoy · Repeat</div>
         </div>
       </div>
     );
@@ -770,7 +773,7 @@ function PublicSite({onLoginClick,data,setData}){
         <div style={{maxWidth:1280,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:70}}>
           {/* Logo */}
           <div onClick={()=>scrollTo("accueil")} style={{cursor:"pointer",display:"flex",alignItems:"center"}}>
-            <JustKoulLogo height={80} white={false}/>
+            <JustKoulLogo height={110} white={false}/>
           </div>
           {/* Center links */}
           <div style={{display:"flex",gap:"2rem",alignItems:"center"}} className="nd">
