@@ -604,10 +604,20 @@ function LoginModal({onLogin,onClose,data}){
 //   LOGO SVG COMPONENT
 // ═══════════════════════════════════════
 function JustKoulLogo({size=44,showText=true}){
-  if(!showText){
-    return <img src="/images/logo-justkoul.svg" alt="Just Koul" style={{height:size,width:"auto",objectFit:"contain",display:"block"}}/>;
+  const [imgError,setImgError]=useState(false);
+  if(imgError){
+    return (
+      <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
+        <div style={{width:size,height:size,borderRadius:"50%",background:"rgba(44,74,30,0.1)",border:"2px solid #2C4A1E",display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*0.45}}>😊</div>
+        <div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:size*0.38,color:"#2C4A1E",lineHeight:1}}>JUST</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:size*0.38,color:"#C8873A",lineHeight:1}}>KOUL</div>
+          <div style={{fontFamily:"Nunito,sans-serif",fontWeight:600,fontSize:size*0.15,color:"#2C4A1E",opacity:0.6,letterSpacing:1,textTransform:"uppercase"}}>Eat · Enjoy · Repeat</div>
+        </div>
+      </div>
+    );
   }
-  return <img src="/images/logo-justkoul.svg" alt="Just Koul" style={{height:size*1.8,width:"auto",objectFit:"contain",display:"block"}}/>;
+  return <img src="/images/logo-justkoul.png" alt="Just Koul" style={{height:size*1.8,width:"auto",objectFit:"contain"}} onError={()=>setImgError(true)}/>;
 }
 
 // ═══════════════════════════════════════
@@ -746,7 +756,7 @@ function PublicSite({onLoginClick,data,setData}){
         <div style={{maxWidth:1280,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:70}}>
           {/* Logo */}
           <div onClick={()=>scrollTo("accueil")} style={{cursor:"pointer"}}>
-            <JustKoulLogo size={52} showText={false}/>
+            <JustKoulLogo size={38} showText={false}/>
           </div>
           {/* Center links */}
           <div style={{display:"flex",gap:"2rem",alignItems:"center"}} className="nd">
@@ -1009,12 +1019,12 @@ function PublicSite({onLoginClick,data,setData}){
             <motion.div variants={fadeUp} style={{fontFamily:F.sans,fontSize:11,fontWeight:800,letterSpacing:3,textTransform:"uppercase",color:C.gold,marginBottom:10}}>🎊 Sur mesure</motion.div>
             <motion.h2 variants={fadeUp} style={{fontFamily:F.serif,fontSize:"clamp(2rem,4vw,3rem)",color:C.green,margin:0}}>Buffets & Événements</motion.h2>
           </motion.div>
-          <motion.div variants={staggerFast} initial="hidden" whileInView="show" viewport={VP} style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:18,marginBottom:"3rem"}}>
+          <motion.div variants={staggerFast} initial="hidden" whileInView="show" viewport={VP} className="buffet-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16,marginBottom:"3rem"}}>
             {BUFFET_CARDS.map(p=>(
               <motion.div key={p.title} variants={fadeUp}
                 whileHover={{scale:1.03,boxShadow:"0 24px 56px rgba(0,0,0,0.22)"}}
                 transition={{duration:0.3,ease:[0.22,1,0.36,1]}}
-                style={{height:260,borderRadius:20,overflow:"hidden",position:"relative",cursor:"default",
+                style={{height:280,borderRadius:20,overflow:"hidden",position:"relative",cursor:"default",
                   backgroundImage:`url(${p.img})`,backgroundSize:"cover",backgroundPosition:"center",
                   background:p.fallback}}>
                 {/* image réelle par dessus le fallback gradient */}
@@ -1225,7 +1235,7 @@ function DashLayout({color,title,subtitle,tabs,activeTab,setActiveTab,onLogout,c
     <div className={`dash-sidebar${mobileOpen?" open":""}`} style={{width:collapsed?64:220,background:color||C.sidebar,display:"flex",flexDirection:"column",flexShrink:0,transition:"width 0.3s ease,transform 0.3s ease",overflow:"hidden"}}>
       <div style={{padding:collapsed?"1rem 0":"1.2rem 1rem",borderBottom:"1px solid rgba(255,255,255,0.07)",display:"flex",alignItems:"center",justifyContent:collapsed?"center":"space-between",gap:8}}>
         {!collapsed&&<div>
-          <JustKoulLogo size={40} showText={false}/>
+          <JustKoulLogo size={32} showText={false}/>
           <div style={{fontSize:9,color:"rgba(255,255,255,0.4)",marginTop:4,letterSpacing:1}}>{subtitle}</div>
         </div>}
         <button onClick={()=>setCollapsed(c=>!c)} className="nd" style={{background:"rgba(255,255,255,0.08)",border:"none",borderRadius:8,padding:"5px 8px",cursor:"pointer",color:"rgba(255,255,255,0.6)",fontSize:14,flexShrink:0}}>
@@ -2899,6 +2909,26 @@ function LivreurSpace({data,setData,onLogout}){
 // ═══════════════════════════════════════
 //   CHATBOT IA
 // ═══════════════════════════════════════
+const FAQ=[
+  {q:["tarif","prix","cout","combien","formule","forfait"],r:`🍱 Nos tarifs cantine :\n• À la commande : 49 DH ou 56 DH (complet)\n• Forfait semaine : 176 DH ou 200 DH\n• Forfait mensuel : 688 DH ou 770 DH ⭐\n• Forfait trimestriel : 1 950 DH ou 2 200 DH\n\n👨‍👩‍👧 Réductions fratrie : -10% (2 enfants), -20% (3 enfants), -30% (4+)`},
+  {q:["bonjour","salut","salam","bonsoir","hello","hi"],r:`Bonjour ! 👋 Bienvenue chez Just Koul !\nJe peux vous renseigner sur :\n💰 Nos tarifs\n🏫 Les écoles desservies\n🍽️ Les menus de la semaine\n💳 Les modes de paiement\n📝 Comment s'inscrire\n\nQue souhaitez-vous savoir ?`},
+  {q:["ecole","livraison","hanane","inbihat","salsabil","chrysalide","ou"],r:`🏫 Écoles desservies :\n• École Al Hanane\n• École Al Inbihat\n• École Salsabil\n• La Chrysalide\n• Autre école : +30 DH supplément\n\n🕛 Livraison entre 11h30 et 13h00, lundi au jeudi`},
+  {q:["menu","plat","manger","lundi","mardi","mercredi","jeudi","semaine","aujourd"],r:`🍽️ Menus de la semaine :\n• Lundi : Poulet rôti & riz pilaf 🍗\n• Mardi : Lasagnes maison 🍝\n• Mercredi : Filet de poisson & purée 🐟\n• Jeudi : Tajine légumes & couscous 🫕\n\nChaque repas = entrée + plat + dessert ou yaourt`},
+  {q:["paiement","payer","virement","rib","espece","liquide","banque"],r:`💳 Modes de paiement :\n\n🏦 Virement bancaire :\nBanque Populaire du Maroc\nRIB : 101 810 0004800078601 34\n\n💵 Espèces : au livreur ou en centre\n\n📱 Confirmez par WhatsApp : 06 33 95 87 60`},
+  {q:["allergi","halal","porc","gluten","regime","vegetar"],r:`🌿 Qualité & Allergies :\n• Tous nos plats sont 100% halal\n• Produits frais locaux, fait maison\n• Déclarez les allergies à l'inscription\n\n📱 Pour un régime spécial : 06 33 95 87 60`},
+  {q:["inscri","comment","commencer","demarrer","abonner","rejoindre"],r:`✅ Comment s'inscrire :\n1. Cliquez "Mon espace" → Créer mon compte\n2. Choisissez votre formule et vos jours\n3. Notre équipe vous contacte sous 24h\n4. Payez et les livraisons démarrent !\n\n📱 Ou WhatsApp : 06 33 95 87 60`},
+  {q:["horaire","heure","quand","midi","matin","livr"],r:`🕛 Horaires de livraison :\nLes repas sont livrés entre 11h30 et 13h00\nDu lundi au jeudi uniquement\n\nUn message WhatsApp vous est envoyé à chaque livraison ✅`},
+  {q:["buffet","evenement","mariage","anniversaire","corporate","soiree","ftour","ramadan"],r:`🎊 Buffets & Événements :\n• Mariages & Fiançailles\n• Anniversaires\n• Corporate & Séminaires\n• Ftour Ramadan\n• Ventes privées & Cocktails\n\nDemandez votre devis gratuit !\n📱 06 33 95 87 60`},
+  {q:["contact","whatsapp","telephone","joindre","instagram","appeler"],r:`📱 Nous contacter :\n• WhatsApp : 06 33 95 87 60\n• Instagram cantine : @just_koul\n• Instagram buffets : @just_koulbuffet\n\nNous répondons lun-sam de 8h à 20h 😊`},
+  {q:["merci","super","parfait","nickel","genial","bien"],r:`Avec plaisir ! 😊 N'hésitez pas si vous avez d'autres questions.\nÀ très bientôt chez Just Koul ! 🍱`},
+];
+function findFaqAnswer(input){
+  const low=input.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+  for(const faq of FAQ){if(faq.q.some(kw=>low.includes(kw)))return faq.r;}
+  return null;
+}
+const FALLBACK_MSG="Je ne suis pas sûr de comprendre votre question 🤔\n\nEssayez de me demander :\n• Les tarifs\n• Les écoles desservies\n• Les menus de la semaine\n• Comment s'inscrire\n• Les modes de paiement\n\nOu contactez-nous directement :\n📱 WhatsApp : 06 33 95 87 60";
+
 function Chatbot(){
   const [open,setOpen]=useState(false);
   const [msgs,setMsgs]=useState([{role:"assistant",content:"Bonjour ! 👋 Je suis l'assistant Just Koul. Comment puis-je vous aider ? Tarifs, menus, livraisons, buffets..."}]);
@@ -2908,10 +2938,13 @@ function Chatbot(){
   const send=async()=>{
     if(!input.trim()||loading)return;
     const um={role:"user",content:input};setMsgs(m=>[...m,um]);setInput("");setLoading(true);
+    const faqAnswer=findFaqAnswer(input);
+    if(faqAnswer){setMsgs(m=>[...m,{role:"assistant",content:faqAnswer}]);setLoading(false);return;}
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:800,system:`Tu es l'assistant virtuel de Just Koul, traiteur à Agadir (Maroc). Réponds en français, de manière chaleureuse, concise.\nInfos: Cantine scolaire lundi-jeudi, livraison aux écoles Al Hanane, Al Inbihat, Salsabil, Chrysalide. Autre école +30 DH. Tarifs: à la commande 49-56 DH, semaine 176-200 DH, mensuel 688-770 DH, trimestriel 1950-2200 DH. Réduction fratrie: 2 enfants -10%, 3 enfants -20%, 4+ -30%. Tout fait maison. Buffets événements sur mesure. Contact: 06 33 95 87 60, @just_koul.`,messages:[...msgs,um].map(m=>({role:m.role,content:m.content}))})});
-      const d=await res.json();setMsgs(m=>[...m,{role:"assistant",content:d.content?.[0]?.text||"Contactez-nous au 06 33 95 87 60 !"}]);
-    }catch{setMsgs(m=>[...m,{role:"assistant",content:"Contactez-nous directement au 06 33 95 87 60 !"}]);}
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01"},body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:400,system:`Tu es l'assistant virtuel de Just Koul, traiteur à Agadir. Réponds en français, chaleureux, concis. Tarifs cantine: commande 49-56DH, semaine 176-200DH, mensuel 688-770DH, trimestriel 1950-2200DH. Écoles: Al Hanane, Al Inbihat, Salsabil, Chrysalide. Contact: 06 33 95 87 60.`,messages:[...msgs,um].map(m=>({role:m.role,content:m.content}))})});
+      const d=await res.json();
+      setMsgs(m=>[...m,{role:"assistant",content:d.content?.[0]?.text||FALLBACK_MSG}]);
+    }catch{setMsgs(m=>[...m,{role:"assistant",content:FALLBACK_MSG}]);}
     setLoading(false);
   };
   return <>
@@ -2923,12 +2956,12 @@ function Chatbot(){
       {open&&<motion.div initial={{opacity:0,y:20,scale:0.95}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:16,scale:0.95}} transition={{duration:0.28}}
         style={{position:"fixed",bottom:90,right:24,zIndex:999,width:330,maxHeight:480,background:C.white,borderRadius:20,boxShadow:"0 16px 60px rgba(0,0,0,0.2)",display:"flex",flexDirection:"column",fontFamily:F.sans,border:`1px solid rgba(200,135,58,0.2)`}}>
         <div style={{background:`linear-gradient(135deg,${C.green},${C.greenL})`,borderRadius:"20px 20px 0 0",padding:"12px 16px",display:"flex",alignItems:"center",gap:10}}>
-          <JustKoulLogo size={32} showText={false}/>
+          <div style={{width:32,height:32,borderRadius:"50%",background:"rgba(255,255,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🍱</div>
           <div><div style={{fontFamily:F.serif,fontWeight:700,fontSize:14,color:C.white}}>Just Koul</div><div style={{fontSize:9,color:"rgba(255,255,255,0.7)"}}>Assistant virtuel · En ligne</div></div>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"12px",display:"flex",flexDirection:"column",gap:8,maxHeight:300}}>
           {msgs.map((m,i)=><div key={i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start"}}>
-            <div style={{maxWidth:"84%",padding:"8px 12px",borderRadius:m.role==="user"?"16px 16px 4px 16px":"16px 16px 16px 4px",background:m.role==="user"?C.green:C.lcream,color:m.role==="user"?C.white:C.text,fontSize:12.5,lineHeight:1.6}}>{m.content}</div>
+            <div style={{maxWidth:"84%",padding:"8px 12px",borderRadius:m.role==="user"?"16px 16px 4px 16px":"16px 16px 16px 4px",background:m.role==="user"?C.green:C.lcream,color:m.role==="user"?C.white:C.text,fontSize:12.5,lineHeight:1.6,whiteSpace:"pre-wrap"}}>{m.content}</div>
           </div>)}
           {loading&&<div style={{display:"flex",justifyContent:"flex-start"}}><div style={{background:C.lcream,borderRadius:"16px 16px 16px 4px",padding:"8px 12px",color:C.textL,fontSize:12}}>⏳ ...</div></div>}
           <div ref={endRef}/>
@@ -3023,7 +3056,7 @@ export default function App(){
   );
 
   return <>
-    <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,800;1,400&family=Nunito:wght@300;400;600;700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0;}body{overflow-x:hidden;}::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-thumb{background:rgba(200,135,58,0.4);border-radius:3px;}input:focus,select:focus,textarea:focus{border-color:#C8873A!important;box-shadow:0 0 0 3px rgba(200,135,58,0.1)!important;outline:none;}@media(max-width:768px){.nd{display:none!important;}.nm{display:block!important;}.hero-grid{grid-template-columns:1fr!important;min-height:auto!important;gap:1.5rem!important;padding-top:0!important;}.hero-img-wrap{min-height:auto!important;padding-bottom:1rem!important;}.hero-img-box{width:260px!important;height:260px!important;}.hero-float{display:none!important;}.hero-ctas{flex-direction:column!important;}.hero-ctas>*{width:100%!important;box-sizing:border-box!important;}.hero-stats{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important;}.form-2col{grid-template-columns:1fr!important;}.dash-sidebar{position:fixed!important;top:0!important;left:0!important;height:100vh!important;z-index:100!important;transform:translateX(-100%)!important;width:260px!important;}.dash-sidebar.open{transform:translateX(0)!important;}}`}</style>
+    <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,800;1,400&family=Nunito:wght@300;400;600;700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0;}body{overflow-x:hidden;}::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-thumb{background:rgba(200,135,58,0.4);border-radius:3px;}input:focus,select:focus,textarea:focus{border-color:#C8873A!important;box-shadow:0 0 0 3px rgba(200,135,58,0.1)!important;outline:none;}@media(max-width:1024px){.buffet-grid{grid-template-columns:repeat(2,1fr)!important;}}@media(max-width:768px){.nd{display:none!important;}.nm{display:block!important;}.hero-grid{grid-template-columns:1fr!important;min-height:auto!important;gap:1.5rem!important;padding-top:0!important;}.hero-img-wrap{min-height:auto!important;padding-bottom:1rem!important;}.hero-img-box{width:260px!important;height:260px!important;}.hero-float{display:none!important;}.hero-ctas{flex-direction:column!important;}.hero-ctas>*{width:100%!important;box-sizing:border-box!important;}.hero-stats{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important;}.form-2col{grid-template-columns:1fr!important;}.buffet-grid{grid-template-columns:1fr!important;}.dash-sidebar{position:fixed!important;top:0!important;left:0!important;height:100vh!important;z-index:100!important;transform:translateX(-100%)!important;width:260px!important;}.dash-sidebar.open{transform:translateX(0)!important;}}`}</style>
     <AnimatePresence>
       {showLogin&&<LoginModal key="modal" onLogin={handleLogin} onClose={()=>setShowLogin(false)} data={data}/>}
     </AnimatePresence>
