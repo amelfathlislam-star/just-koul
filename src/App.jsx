@@ -770,7 +770,7 @@ function PublicSite({onLoginClick,data,setData}){
         <div style={{maxWidth:1280,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:70}}>
           {/* Logo */}
           <div onClick={()=>scrollTo("accueil")} style={{cursor:"pointer",display:"flex",alignItems:"center"}}>
-            <JustKoulLogo height={52} white={false}/>
+            <JustKoulLogo height={80} white={false}/>
           </div>
           {/* Center links */}
           <div style={{display:"flex",gap:"2rem",alignItems:"center"}} className="nd">
@@ -1280,7 +1280,7 @@ function PublicSite({onLoginClick,data,setData}){
       <section id="contact" style={{background:C.green,padding:"70px 2rem"}}>
         <div style={{maxWidth:1200,margin:"0 auto"}}>
           <motion.div variants={fadeUp} initial="hidden" whileInView="show" viewport={VP} style={{display:"flex",justifyContent:"center",marginBottom:"1.2rem"}}>
-            <JustKoulLogo height={44} white={true}/>
+            <JustKoulLogo height={64} white={true}/>
           </motion.div>
           <motion.h2 variants={fadeUp} initial="hidden" whileInView="show" viewport={VP} style={{fontFamily:F.serif,fontSize:"clamp(1.8rem,4vw,2.8rem)",color:C.white,margin:"0 0 2rem",textAlign:"center"}}>Nous contacter</motion.h2>
           <motion.div variants={staggerFast} initial="hidden" whileInView="show" viewport={VP} style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:18,marginBottom:"2rem"}}>
@@ -1330,7 +1330,7 @@ function DashLayout({color,title,subtitle,tabs,activeTab,setActiveTab,onLogout,c
     <div className={`dash-sidebar${mobileOpen?" open":""}`} style={{width:collapsed?64:220,background:color||C.sidebar,display:"flex",flexDirection:"column",flexShrink:0,transition:"width 0.3s ease,transform 0.3s ease",overflow:"hidden"}}>
       <div style={{padding:collapsed?"1rem 0":"1.2rem 1rem",borderBottom:"1px solid rgba(255,255,255,0.07)",display:"flex",alignItems:"center",justifyContent:collapsed?"center":"space-between",gap:8}}>
         {!collapsed&&<div>
-          <JustKoulLogo height={40} white={true}/>
+          <JustKoulLogo height={56} white={true}/>
           <div style={{fontSize:9,color:"rgba(255,255,255,0.4)",marginTop:4,letterSpacing:1}}>{subtitle}</div>
         </div>}
         <button onClick={()=>setCollapsed(c=>!c)} className="nd" style={{background:"rgba(255,255,255,0.08)",border:"none",borderRadius:8,padding:"5px 8px",cursor:"pointer",color:"rgba(255,255,255,0.6)",fontSize:14,flexShrink:0}}>
@@ -2960,7 +2960,7 @@ function LivreurSpace({data,setData,onLogout}){
   return <div style={{minHeight:"100vh",background:C.lcream,fontFamily:F.sans}}>
     <div style={{background:C.blue,color:C.white,padding:"1rem 2rem",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
       <div style={{display:"flex",alignItems:"center",gap:14}}>
-        <JustKoulLogo height={36} white={true}/>
+        <JustKoulLogo height={52} white={true}/>
         <div style={{fontSize:11,opacity:0.75,borderLeft:"1px solid rgba(255,255,255,0.25)",paddingLeft:14}}>🛵 Espace Livreur · {todayStr()}</div>
       </div>
       <div style={{display:"flex",gap:8,alignItems:"center"}}>
@@ -3066,7 +3066,7 @@ function Chatbot(){
       {open&&<motion.div initial={{opacity:0,y:20,scale:0.95}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:16,scale:0.95}} transition={{duration:0.28}}
         style={{position:"fixed",bottom:90,right:24,zIndex:999,width:330,maxHeight:480,background:C.white,borderRadius:20,boxShadow:"0 16px 60px rgba(0,0,0,0.2)",display:"flex",flexDirection:"column",fontFamily:F.sans,border:`1px solid rgba(200,135,58,0.2)`}}>
         <div style={{background:`linear-gradient(135deg,${C.green},${C.greenL})`,borderRadius:"20px 20px 0 0",padding:"10px 16px",display:"flex",alignItems:"center",gap:10}}>
-          <JustKoulLogo height={30} white={true}/>
+          <JustKoulLogo height={44} white={true}/>
           <div style={{marginLeft:4}}><div style={{fontFamily:F.sans,fontSize:9,color:"rgba(255,255,255,0.7)"}}>Assistant virtuel · En ligne</div></div>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"12px",display:"flex",flexDirection:"column",gap:8,maxHeight:300}}>
@@ -3115,7 +3115,7 @@ function ResetPasswordPage(){
       <div style={{background:C.white,borderRadius:28,padding:"2.5rem",width:"100%",maxWidth:420,boxShadow:"0 24px 80px rgba(0,0,0,0.15)"}}>
         <div style={{textAlign:"center",marginBottom:"1.8rem"}}>
           <div style={{display:"flex",justifyContent:"center",marginBottom:4}}>
-            <JustKoulLogo height={48} white={false}/>
+            <JustKoulLogo height={64} white={false}/>
           </div>
           <h2 style={{fontFamily:F.serif,fontSize:22,color:C.green,margin:"1rem 0 4px"}}>Nouveau mot de passe</h2>
           <p style={{fontSize:12,color:C.textL}}>Choisissez un mot de passe sécurisé</p>
