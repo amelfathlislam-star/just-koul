@@ -617,21 +617,22 @@ function LoginModal({onLogin,onClose,data}){
 // ═══════════════════════════════════════
 //   LOGO SVG COMPONENT
 // ═══════════════════════════════════════
-function JustKoulLogo({size=44,showText=true}){
-  const [imgError,setImgError]=useState(false);
-  if(imgError){
-    return (
-      <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
-        <div style={{width:size,height:size,borderRadius:"50%",background:"rgba(44,74,30,0.1)",border:"2px solid #2C4A1E",display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*0.45}}>😊</div>
-        <div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:size*0.38,color:"#2C4A1E",lineHeight:1}}>JUST</div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:size*0.38,color:"#C8873A",lineHeight:1}}>KOUL</div>
-          <div style={{fontFamily:"Nunito,sans-serif",fontWeight:600,fontSize:size*0.15,color:"#2C4A1E",opacity:0.6,letterSpacing:1,textTransform:"uppercase"}}>Eat · Enjoy · Repeat</div>
-        </div>
-      </div>
-    );
-  }
-  return <img src="/images/logo-justkoul.png" alt="Just Koul" style={{height:size*1.8,width:"auto",objectFit:"contain"}} onError={()=>setImgError(true)}/>;
+function JustKoulLogo({size=44,showText=true,light=false}){
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+      <div style={{
+        width:size,height:size,borderRadius:"50%",flexShrink:0,
+        background:light?"rgba(255,255,255,0.15)":"linear-gradient(135deg,#2C4A1E,#3D6B2C)",
+        display:"flex",alignItems:"center",justifyContent:"center",
+        fontSize:size*0.44,
+        boxShadow:light?"none":`0 2px 8px rgba(44,74,30,0.28)`
+      }}>😊</div>
+      {showText&&<div style={{lineHeight:1.1}}>
+        <div style={{fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:size*0.38,color:light?"#FFFFFF":"#2C4A1E",letterSpacing:-0.3}}>Just Koul</div>
+        <div style={{fontFamily:"Nunito,sans-serif",fontWeight:600,fontSize:size*0.17,color:light?"rgba(255,255,255,0.55)":"#C8873A",letterSpacing:2,textTransform:"uppercase"}}>Eat · Enjoy · Repeat</div>
+      </div>}
+    </div>
+  );
 }
 
 // ═══════════════════════════════════════
@@ -645,7 +646,7 @@ Activité : Traiteur scolaire et événementiel
 Localisation : Agadir, Maroc
 Téléphone : 06 33 95 87 60
 Email : contact@just-koul.ma
-Instagram : @just_koul / @just_koulbuffet
+Instagram : @just_koul / @entre.l.events
 
 Hébergement : Vercel Inc.
 440 N Barranca Ave #4133
@@ -1279,7 +1280,7 @@ function PublicSite({onLoginClick,data,setData}){
         <div style={{maxWidth:1200,margin:"0 auto"}}>
           <motion.h2 variants={fadeUp} initial="hidden" whileInView="show" viewport={VP} style={{fontFamily:F.serif,fontSize:"clamp(1.8rem,4vw,2.8rem)",color:C.white,margin:"0 0 2rem",textAlign:"center"}}>Nous contacter</motion.h2>
           <motion.div variants={staggerFast} initial="hidden" whileInView="show" viewport={VP} style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:18,marginBottom:"2rem"}}>
-            {[{icon:"📱",label:"WhatsApp",value:"06 33 95 87 60",href:"https://wa.me/212633958760"},{icon:"📸",label:"Instagram Cantine",value:"@just_koul",href:"https://instagram.com/just_koul"},{icon:"📸",label:"Instagram Buffets",value:"@just_koulbuffet",href:"https://instagram.com/just_koulbuffet"},{icon:"📍",label:"Zone livraison",value:"Agadir & environs",href:null}].map(c=>(
+            {[{icon:"📱",label:"WhatsApp",value:"06 33 95 87 60",href:"https://wa.me/212633958760"},{icon:"📸",label:"Instagram Cantine",value:"@just_koul",href:"https://instagram.com/just_koul"},{icon:"📸",label:"Instagram Événements",value:"@entre.l.events",href:"https://www.instagram.com/entre.l.events/"},{icon:"📍",label:"Zone livraison",value:"Agadir & environs",href:null}].map(c=>(
               <motion.div key={c.label} variants={fadeUp} whileHover={c.href?{y:-4,background:"rgba(255,255,255,0.18)"}:{}} onClick={()=>c.href&&window.open(c.href,"_blank")}
                 style={{background:"rgba(255,255,255,0.08)",borderRadius:16,padding:"1.4rem",textAlign:"center",border:"1px solid rgba(255,255,255,0.1)",cursor:c.href?"pointer":"default"}}>
                 <div style={{fontSize:30,marginBottom:8}}>{c.icon}</div>
@@ -1325,7 +1326,7 @@ function DashLayout({color,title,subtitle,tabs,activeTab,setActiveTab,onLogout,c
     <div className={`dash-sidebar${mobileOpen?" open":""}`} style={{width:collapsed?64:220,background:color||C.sidebar,display:"flex",flexDirection:"column",flexShrink:0,transition:"width 0.3s ease,transform 0.3s ease",overflow:"hidden"}}>
       <div style={{padding:collapsed?"1rem 0":"1.2rem 1rem",borderBottom:"1px solid rgba(255,255,255,0.07)",display:"flex",alignItems:"center",justifyContent:collapsed?"center":"space-between",gap:8}}>
         {!collapsed&&<div>
-          <JustKoulLogo size={32} showText={false}/>
+          <JustKoulLogo size={32} showText={false} light={true}/>
           <div style={{fontSize:9,color:"rgba(255,255,255,0.4)",marginTop:4,letterSpacing:1}}>{subtitle}</div>
         </div>}
         <button onClick={()=>setCollapsed(c=>!c)} className="nd" style={{background:"rgba(255,255,255,0.08)",border:"none",borderRadius:8,padding:"5px 8px",cursor:"pointer",color:"rgba(255,255,255,0.6)",fontSize:14,flexShrink:0}}>
@@ -3021,7 +3022,7 @@ const FAQ=[
   {q:["inscri","comment","commencer","demarrer","abonner","rejoindre"],r:`✅ Comment s'inscrire :\n1. Cliquez "Mon espace" → Créer mon compte\n2. Choisissez votre formule et vos jours\n3. Notre équipe vous contacte sous 24h\n4. Payez et les livraisons démarrent !\n\n📱 Ou WhatsApp : 06 33 95 87 60`},
   {q:["horaire","heure","quand","midi","matin","livr"],r:`🕛 Horaires de livraison :\nLes repas sont livrés entre 11h30 et 13h00\nDu lundi au jeudi uniquement\n\nUn message WhatsApp vous est envoyé à chaque livraison ✅`},
   {q:["buffet","evenement","mariage","anniversaire","corporate","soiree","ftour","ramadan"],r:`🎊 Buffets & Événements :\n• Mariages & Fiançailles\n• Anniversaires\n• Corporate & Séminaires\n• Ftour Ramadan\n• Ventes privées & Cocktails\n\nDemandez votre devis gratuit !\n📱 06 33 95 87 60`},
-  {q:["contact","whatsapp","telephone","joindre","instagram","appeler"],r:`📱 Nous contacter :\n• WhatsApp : 06 33 95 87 60\n• Instagram cantine : @just_koul\n• Instagram buffets : @just_koulbuffet\n\nNous répondons lun-sam de 8h à 20h 😊`},
+  {q:["contact","whatsapp","telephone","joindre","instagram","appeler"],r:`📱 Nous contacter :\n• WhatsApp : 06 33 95 87 60\n• Instagram cantine : @just_koul\n• Instagram événements : @entre.l.events\n\nNous répondons lun-sam de 8h à 20h 😊`},
   {q:["merci","super","parfait","nickel","genial","bien"],r:`Avec plaisir ! 😊 N'hésitez pas si vous avez d'autres questions.\nÀ très bientôt chez Just Koul ! 🍱`},
 ];
 function findFaqAnswer(input){
