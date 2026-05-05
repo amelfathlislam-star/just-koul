@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#2C4A1E"/>
+  <rect y="560" width="1200" height="70" fill="#C8873A"/>
+  <!-- Decorative circles -->
+  <circle cx="1100" cy="80" r="180" fill="rgba(200,135,58,0.08)"/>
+  <circle cx="100" cy="550" r="140" fill="rgba(255,255,255,0.04)"/>
+  <!-- Logo text -->
+  <text x="600" y="180" font-family="Georgia,serif" font-size="96" font-weight="800" fill="#E8A555" text-anchor="middle" letter-spacing="6">JUST KOUL</text>
+  <text x="600" y="235" font-family="Arial,sans-serif" font-size="22" fill="rgba(255,255,255,0.55)" text-anchor="middle" letter-spacing="8">E A T  ·  E N J O Y  ·  R E P E A T</text>
+  <!-- Divider -->
+  <line x1="440" y1="270" x2="760" y2="270" stroke="rgba(200,135,58,0.4)" stroke-width="1"/>
+  <!-- Tagline -->
+  <text x="600" y="340" font-family="Georgia,serif" font-size="38" fill="#FFFFFF" text-anchor="middle">Cantine scolaire &amp; traiteur</text>
+  <text x="600" y="395" font-family="Georgia,serif" font-size="34" fill="#E8A555" text-anchor="middle">événementiel à Agadir</text>
+  <!-- Features -->
+  <text x="340" y="480" font-family="Arial,sans-serif" font-size="20" fill="rgba(255,255,255,0.7)" text-anchor="middle">Repas frais livrés à l'école</text>
+  <text x="600" y="480" font-family="Arial,sans-serif" font-size="20" fill="rgba(200,135,58,0.8)" text-anchor="middle">|</text>
+  <text x="860" y="480" font-family="Arial,sans-serif" font-size="20" fill="rgba(255,255,255,0.7)" text-anchor="middle">Buffets sur mesure</text>
+  <!-- Bottom bar text -->
+  <text x="600" y="603" font-family="Arial,sans-serif" font-size="20" fill="white" text-anchor="middle" letter-spacing="1">just-koul.vercel.app  ·  06 33 95 87 60</text>
+</svg>

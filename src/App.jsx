@@ -783,7 +783,7 @@ function PublicSite({onLoginClick,data,setData}){
         <div style={{position:"absolute",top:-80,right:-80,width:520,height:520,borderRadius:"50%",background:"rgba(44,74,30,0.04)",pointerEvents:"none"}}/>
         <div style={{position:"absolute",bottom:-60,right:180,width:300,height:300,borderRadius:"50%",background:"rgba(200,135,58,0.05)",pointerEvents:"none"}}/>
 
-        <div style={{maxWidth:1280,margin:"0 auto",width:"100%",display:"grid",gridTemplateColumns:"1fr 1fr",gap:"3rem",alignItems:"center",minHeight:"calc(100vh - 70px)"}}>
+        <div className="hero-grid" style={{maxWidth:1280,margin:"0 auto",width:"100%",display:"grid",gridTemplateColumns:"1fr 1fr",gap:"3rem",alignItems:"center",minHeight:"calc(100vh - 70px)"}}>
 
           {/* LEFT */}
           <motion.div variants={stagger} initial="hidden" animate="show" style={{paddingBottom:"3rem"}}>
@@ -808,7 +808,7 @@ function PublicSite({onLoginClick,data,setData}){
             </motion.p>
 
             {/* CTA Buttons */}
-            <motion.div variants={fadeUp} style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:40}}>
+            <motion.div variants={fadeUp} className="hero-ctas" style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:40}}>
               <motion.button onClick={()=>scrollTo("commander")} whileHover={{scale:1.04,boxShadow:`0 8px 28px rgba(44,74,30,0.35)`}} whileTap={{scale:0.97}}
                 style={{background:C.green,color:C.white,border:"none",borderRadius:30,padding:"14px 30px",fontFamily:F.sans,fontWeight:800,fontSize:14,cursor:"pointer",boxShadow:`0 4px 18px rgba(44,74,30,0.25)`,letterSpacing:0.3}}>
                 🥡 Commander la cantine
@@ -820,7 +820,7 @@ function PublicSite({onLoginClick,data,setData}){
             </motion.div>
 
             {/* Stats */}
-            <motion.div variants={fadeUp} style={{display:"flex",gap:32,flexWrap:"wrap"}}>
+            <motion.div variants={fadeUp} className="hero-stats" style={{display:"flex",gap:32,flexWrap:"wrap"}}>
               {[["100+","Familles servies"],["4","Écoles partenaires"],["0%","Conservateurs"],["★ 4.9","Avis clients"]].map(([val,lab])=>(
                 <div key={lab}>
                   <div style={{fontFamily:F.serif,fontWeight:800,fontSize:22,color:C.green,lineHeight:1}}>{val}</div>
@@ -835,6 +835,7 @@ function PublicSite({onLoginClick,data,setData}){
             initial={{opacity:0,x:40}}
             animate={{opacity:1,x:0}}
             transition={{duration:0.9,delay:0.2}}
+            className="hero-img-wrap"
             style={{position:"relative",display:"flex",justifyContent:"center",
                     alignItems:"center",paddingBottom:"3rem",minHeight:520}}>
 
@@ -843,7 +844,7 @@ function PublicSite({onLoginClick,data,setData}){
               animate={{y:[0,-10,0]}}
               transition={{duration:5,repeat:Infinity,ease:"easeInOut"}}
               style={{position:"relative",zIndex:2}}>
-              <div style={{width:420,height:420,borderRadius:32,overflow:"hidden",
+              <div className="hero-img-box" style={{width:420,height:420,borderRadius:32,overflow:"hidden",
                            boxShadow:"0 32px 80px rgba(0,0,0,0.2)",position:"relative"}}>
                 <img
                   src="/images/hero-plat.jpg"
@@ -870,6 +871,7 @@ function PublicSite({onLoginClick,data,setData}){
             {/* Carte livraison en haut à gauche */}
             <motion.div initial={{opacity:0,x:-20}} animate={{opacity:1,x:0}}
               transition={{delay:0.7}}
+              className="hero-float"
               style={{position:"absolute",top:"8%",left:"-5%",background:"white",
                       borderRadius:18,padding:"12px 16px",
                       boxShadow:"0 12px 40px rgba(0,0,0,0.12)",
@@ -891,6 +893,7 @@ function PublicSite({onLoginClick,data,setData}){
             {/* Carte menu en bas à droite */}
             <motion.div initial={{opacity:0,x:20}} animate={{opacity:1,x:0}}
               transition={{delay:0.9}}
+              className="hero-float"
               style={{position:"absolute",bottom:"10%",right:"-5%",background:"white",
                       borderRadius:18,padding:"14px 16px",
                       boxShadow:"0 12px 40px rgba(0,0,0,0.12)",
@@ -910,6 +913,7 @@ function PublicSite({onLoginClick,data,setData}){
             {/* Bubble rating */}
             <motion.div animate={{scale:[1,1.08,1]}}
               transition={{duration:2.5,repeat:Infinity}}
+              className="hero-float"
               style={{position:"absolute",top:"50%",left:"-8%",
                       background:"linear-gradient(135deg,#C8873A,#E8A555)",
                       borderRadius:"50%",width:68,height:68,
@@ -1119,7 +1123,7 @@ function PublicSite({onLoginClick,data,setData}){
               <motion.div animate={{y:[0,-8,0]}} transition={{duration:3,repeat:Infinity,ease:"easeInOut"}} style={{fontSize:64,marginBottom:"1.2rem"}}>🍱</motion.div>
               <h3 style={{fontFamily:F.serif,fontSize:22,color:C.green,marginBottom:10}}>Commandez depuis votre espace</h3>
               <p style={{fontFamily:F.sans,fontSize:14,color:C.textL,maxWidth:420,margin:"0 auto 1.6rem",lineHeight:1.7}}>Pour commander des repas pour votre enfant, connectez-vous à votre espace parent ou créez un compte gratuitement.</p>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:"1.6rem",textAlign:"left"}}>
+              <div className="form-2col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:"1.6rem",textAlign:"left"}}>
                 {[{icon:"📊",label:"Suivi des repas",desc:"Historique & livraisons"},{icon:"💳",label:"Paiement facile",desc:"Virement ou espèces"},{icon:"🗓️",label:"Menus du mois",desc:"Planification à l'avance"},{icon:"🔔",label:"Notifications",desc:"Confirmations & rappels"}].map(a=>(
                   <div key={a.label} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"12px 14px",background:C.lcream,borderRadius:14}}>
                     <div style={{fontSize:22,flexShrink:0}}>{a.icon}</div>
@@ -1151,11 +1155,11 @@ function PublicSite({onLoginClick,data,setData}){
           ):(
             <Card>
               <h3 style={{fontFamily:F.serif,fontSize:18,color:C.green,marginBottom:"1.2rem"}}>🎊 Demande de devis événement</h3>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Inp label="Prénom" value={formContact.prenom} onChange={v=>hf("prenom",v)} required/><Inp label="Nom" value={formContact.nom} onChange={v=>hf("nom",v)} required/></div>
+              <div className="form-2col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Inp label="Prénom" value={formContact.prenom} onChange={v=>hf("prenom",v)} required/><Inp label="Nom" value={formContact.nom} onChange={v=>hf("nom",v)} required/></div>
               <Inp label="Téléphone / WhatsApp" value={formContact.tel} onChange={v=>hf("tel",v)} required/>
               <Inp label="Email" type="email" value={formContact.email} onChange={v=>hf("email",v)}/>
               <Inp label="Type d'événement" type="select" value={formContact.typeEvent||""} onChange={v=>hf("typeEvent",v)} options={["","Mariage / Fiançailles","Anniversaire","Corporate","Ftour Ramadan","Vente privée","Cocktail dînatoire","Autre"].map(v=>({id:v,label:v||"Sélectionnez..."}))}/>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Inp label="Date" type="date" value={formContact.dateEvent} onChange={v=>hf("dateEvent",v)}/><Inp label="Nombre de personnes" type="number" value={formContact.nbPersonnes} onChange={v=>hf("nbPersonnes",v)} placeholder="Ex: 80"/></div>
+              <div className="form-2col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Inp label="Date" type="date" value={formContact.dateEvent} onChange={v=>hf("dateEvent",v)}/><Inp label="Nombre de personnes" type="number" value={formContact.nbPersonnes} onChange={v=>hf("nbPersonnes",v)} placeholder="Ex: 80"/></div>
               <Inp label="Décrivez votre événement" type="textarea" value={formContact.message} onChange={v=>hf("message",v)} placeholder="Lieu, budget, thème, cuisine souhaitée..."/>
               <Btn onClick={()=>{if(formContact.nom||formContact.prenom){
                 const tmp=`tmp_${Date.now()}`;
@@ -1213,21 +1217,25 @@ function PublicSite({onLoginClick,data,setData}){
 // ═══════════════════════════════════════
 function DashLayout({color,title,subtitle,tabs,activeTab,setActiveTab,onLogout,children,badges={}}){
   const [collapsed,setCollapsed]=useState(false);
+  const [mobileOpen,setMobileOpen]=useState(false);
   return <div style={{display:"flex",minHeight:"100vh",background:"#F4EFE4",fontFamily:F.sans}}>
+    {/* Backdrop mobile */}
+    {mobileOpen&&<div onClick={()=>setMobileOpen(false)} className="nm" style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:90,display:"none"}}/>}
     {/* Sidebar */}
-    <div style={{width:collapsed?64:220,background:color||C.sidebar,display:"flex",flexDirection:"column",flexShrink:0,transition:"width 0.3s ease",overflow:"hidden"}}>
+    <div className={`dash-sidebar${mobileOpen?" open":""}`} style={{width:collapsed?64:220,background:color||C.sidebar,display:"flex",flexDirection:"column",flexShrink:0,transition:"width 0.3s ease,transform 0.3s ease",overflow:"hidden"}}>
       <div style={{padding:collapsed?"1rem 0":"1.2rem 1rem",borderBottom:"1px solid rgba(255,255,255,0.07)",display:"flex",alignItems:"center",justifyContent:collapsed?"center":"space-between",gap:8}}>
         {!collapsed&&<div>
           <JustKoulLogo size={40} showText={false}/>
           <div style={{fontSize:9,color:"rgba(255,255,255,0.4)",marginTop:4,letterSpacing:1}}>{subtitle}</div>
         </div>}
-        <button onClick={()=>setCollapsed(c=>!c)} style={{background:"rgba(255,255,255,0.08)",border:"none",borderRadius:8,padding:"5px 8px",cursor:"pointer",color:"rgba(255,255,255,0.6)",fontSize:14,flexShrink:0}}>
+        <button onClick={()=>setCollapsed(c=>!c)} className="nd" style={{background:"rgba(255,255,255,0.08)",border:"none",borderRadius:8,padding:"5px 8px",cursor:"pointer",color:"rgba(255,255,255,0.6)",fontSize:14,flexShrink:0}}>
           {collapsed?"→":"←"}
         </button>
+        <button onClick={()=>setMobileOpen(false)} className="nm" style={{background:"rgba(255,255,255,0.08)",border:"none",borderRadius:8,padding:"5px 8px",cursor:"pointer",color:"rgba(255,255,255,0.6)",fontSize:16,flexShrink:0,display:"none"}}>✕</button>
       </div>
       <div style={{padding:collapsed?"0.8rem 0.5rem":"0.8rem",flex:1,overflowY:"auto"}}>
         {tabs.map(t=>(
-          <button key={t.id} onClick={()=>setActiveTab(t.id)} title={collapsed?t.label:""}
+          <button key={t.id} onClick={()=>{setActiveTab(t.id);setMobileOpen(false);}} title={collapsed?t.label:""}
             style={{width:"100%",display:"flex",alignItems:"center",gap:collapsed?0:10,padding:collapsed?"10px 0":"9px 12px",justifyContent:collapsed?"center":"flex-start",background:activeTab===t.id?"rgba(200,135,58,0.2)":"transparent",color:activeTab===t.id?C.goldL:"rgba(255,255,255,0.5)",border:activeTab===t.id?"1px solid rgba(200,135,58,0.25)":"none",borderRadius:10,cursor:"pointer",fontFamily:F.sans,fontWeight:activeTab===t.id?700:500,fontSize:12.5,marginBottom:2,textAlign:"left",position:"relative",transition:"all 0.15s"}}>
             <span style={{fontSize:16,flexShrink:0}}>{t.icon}</span>
             {!collapsed&&<span style={{flex:1}}>{t.label}</span>}
@@ -1243,7 +1251,10 @@ function DashLayout({color,title,subtitle,tabs,activeTab,setActiveTab,onLogout,c
       </div>
     </div>
     {/* Main */}
-    <div style={{flex:1,overflow:"auto",padding:"1.8rem"}}>
+    <div style={{flex:1,overflow:"auto",padding:"1.8rem",minWidth:0}}>
+      <button onClick={()=>setMobileOpen(true)} className="nm" style={{background:color||C.sidebar,color:"white",border:"none",borderRadius:10,padding:"8px 14px",cursor:"pointer",fontFamily:F.sans,fontWeight:700,fontSize:13,display:"none",marginBottom:"1rem"}}>
+        ☰ Menu
+      </button>
       <AnimatePresence mode="wait">
         <motion.div key={activeTab} initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}} transition={{duration:0.25}}>
           {children}
@@ -3012,7 +3023,7 @@ export default function App(){
   );
 
   return <>
-    <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,800;1,400&family=Nunito:wght@300;400;600;700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0;}body{overflow-x:hidden;}::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-thumb{background:rgba(200,135,58,0.4);border-radius:3px;}input:focus,select:focus,textarea:focus{border-color:#C8873A!important;box-shadow:0 0 0 3px rgba(200,135,58,0.1)!important;outline:none;}@media(max-width:768px){.nd{display:none!important;}.nm{display:block!important;}}`}</style>
+    <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,800;1,400&family=Nunito:wght@300;400;600;700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0;}body{overflow-x:hidden;}::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-thumb{background:rgba(200,135,58,0.4);border-radius:3px;}input:focus,select:focus,textarea:focus{border-color:#C8873A!important;box-shadow:0 0 0 3px rgba(200,135,58,0.1)!important;outline:none;}@media(max-width:768px){.nd{display:none!important;}.nm{display:block!important;}.hero-grid{grid-template-columns:1fr!important;min-height:auto!important;gap:1.5rem!important;padding-top:0!important;}.hero-img-wrap{min-height:auto!important;padding-bottom:1rem!important;}.hero-img-box{width:260px!important;height:260px!important;}.hero-float{display:none!important;}.hero-ctas{flex-direction:column!important;}.hero-ctas>*{width:100%!important;box-sizing:border-box!important;}.hero-stats{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important;}.form-2col{grid-template-columns:1fr!important;}.dash-sidebar{position:fixed!important;top:0!important;left:0!important;height:100vh!important;z-index:100!important;transform:translateX(-100%)!important;width:260px!important;}.dash-sidebar.open{transform:translateX(0)!important;}}`}</style>
     <AnimatePresence>
       {showLogin&&<LoginModal key="modal" onLogin={handleLogin} onClose={()=>setShowLogin(false)} data={data}/>}
     </AnimatePresence>

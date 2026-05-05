@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://just-koul.vercel.app/sitemap.xml
