@@ -86,6 +86,15 @@ function emailHtmlReset(code){
   return `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#FDF8EE;border-radius:16px;overflow:hidden"><div style="background:#2C4A1E;padding:28px;text-align:center"><div style="font-size:28px;font-weight:800;color:#E8A555;letter-spacing:1px">JUST KOUL</div><div style="color:rgba(255,255,255,0.6);font-size:12px;margin-top:4px">Eat · Enjoy · Repeat</div></div><div style="padding:32px"><h2 style="color:#2C4A1E;font-size:20px;margin:0 0 16px">🔑 Réinitialisation de mot de passe</h2><p style="color:#6B5240;font-size:14px;line-height:1.7;margin:0 0 8px">Bonjour,</p><p style="color:#6B5240;font-size:14px;line-height:1.7;margin:0 0 20px">Voici votre code de réinitialisation :</p><div style="background:#2C4A1E;color:#E8A555;font-family:monospace;font-size:38px;font-weight:800;letter-spacing:12px;padding:20px;border-radius:12px;text-align:center;margin-bottom:20px">${code}</div><p style="color:#6B5240;font-size:13px;margin:0 0 8px">Valable <strong>15 minutes</strong> uniquement.</p><p style="color:#9E9387;font-size:12px;margin:0">Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.</p></div><div style="background:#2C4A1E;padding:14px;text-align:center;font-size:11px;color:rgba(255,255,255,0.45)">Just Koul · Agadir · 06 33 95 87 60</div></div>`;
 }
 
+// ─── WHATSAPP (CALLMEBOT) ───
+async function sendWhatsApp(message){
+  const phone=import.meta.env.VITE_WHATSAPP_ADMIN;
+  const apikey=import.meta.env.VITE_CALLMEBOT_APIKEY;
+  if(!phone||!apikey)return;
+  try{await fetch(`https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${encodeURIComponent(message)}&apikey=${apikey}`,{mode:'no-cors'});}
+  catch(e){console.log('WhatsApp:',e);}
+}
+
 // ─── INITIAL DATA ───
 const INIT={
   enrollments:[
@@ -443,6 +452,7 @@ function LoginModal({onLogin,onClose,data}){
     setVerfBusy(false);
     if(error){setVerfErr(error.message);return;}
     setSOk(`Compte créé !\nVotre identifiant : ${nom.toLowerCase()}\nBienvenue chez Just Koul !`);
+    sendWhatsApp(`🍱 *Just Koul — Nouvelle inscription*\n👤 ${prenom} ${nom}\n📱 ${tel||"Non renseigné"}\n📧 ${email}\n📅 ${todayStr()}\n→ Valider sur just-koul.vercel.app`);
     setView("signup");
   };
 
@@ -1176,6 +1186,7 @@ function PublicSite({onLoginClick,data,setData}){
                 const newQ={id:tmp,nom:`${formContact.prenom} ${formContact.nom}`,tel:formContact.tel,email:formContact.email,typeEvent:formContact.typeEvent,date:formContact.dateEvent,nbPersonnes:formContact.nbPersonnes,message:formContact.message,status:"new",createdAt:todayStr(),items:[],total:0,deposit:0,depositPaid:false,notes:""};
                 setData(d=>({...d,quotes:[...d.quotes,newQ]}));
                 supabase.from('quotes').insert(fQ(newQ)).select().single().then(({data:row})=>{if(row)setData(d=>({...d,quotes:d.quotes.map(q=>q.id===tmp?{...q,id:row.id}:q)}));});
+                sendWhatsApp(`🎊 *Just Koul — Nouveau devis*\n👤 ${newQ.nom}\n📱 ${newQ.tel}\n🎉 Événement : ${newQ.typeEvent||"Non précisé"}\n📅 Date : ${newQ.date||"À confirmer"}\n👥 ${newQ.nbPersonnes||"?"} personnes\n💬 ${(newQ.message||"").slice(0,100)}`);
                 setSubmitted(true);}}} full style={{marginTop:4}}>
                 📋 Envoyer ma demande de devis
               </Btn>
@@ -1465,6 +1476,10 @@ function AdminCommandes({data,setData}){
     if(status==="validated"){
       const enroll=data.enrollments.find(e=>e.id===id);
       if(enroll?.email)await sendEmail(enroll.email,"🎉 Votre inscription est confirmée — Just Koul",emailHtmlConfirm(enroll.parentPrenom,enroll));
+      if(enroll){
+        const formLabel=FORMULES.find(f=>f.id===enroll.formule)?.label||enroll.formule||"";
+        await sendWhatsApp(`✅ *Just Koul — Commande validée*\n👤 ${enroll.parentPrenom} ${enroll.parentNom}\n📋 Formule : ${formLabel}\n💰 Montant : ${enroll.amount} DH\n📱 Tel : ${enroll.tel}`);
+      }
     }
   };
 
@@ -1671,6 +1686,9 @@ function AdminStocks({data,setData}){
     setData(d=>({...d,stock:d.stock.map(s=>s.id===id?{...s,qty:newQty,lastUpdated:todayStr()}:s)}));
     const {error}=await supabase.from('stock').update({qty:newQty,last_updated:new Date().toISOString()}).eq('id',id);
     if(error){console.error('stock qty error:',error);await reloadStock();return;}
+    if(newQty<=item.minQty){
+      await sendWhatsApp(`⚠️ *Just Koul — Stock bas*\n📦 ${item.name}\n📊 Stock actuel : ${newQty} ${item.unit}\n🔴 Minimum requis : ${item.minQty} ${item.unit}\n→ Commander chez : ${item.supplier||"?"}`);
+    }
     flash();
   };
 
@@ -2524,7 +2542,11 @@ function AdminPaiements({data,setData}){
         ];
         const inv={enroll_id:enroll.id,type:'cantine',client_nom:`${enroll.parentPrenom} ${enroll.parentNom}`,client_tel:enroll.tel,issue_date:todayStr(),due_date:todayStr(),paid_date:todayStr(),status:'paid',items,subtotal:gross,discount:enroll.discount||0,total:enroll.amount||0,deposit:0,deposit_paid:false,notes:''};
         const{data:newRow}=await supabase.from('invoices').insert(inv).select().single();
-        if(newRow){setData(d=>({...d,invoices:[tI(newRow),...d.invoices]}));setToast("✅ Facture générée automatiquement");}
+        if(newRow){
+          setData(d=>({...d,invoices:[tI(newRow),...d.invoices]}));setToast("✅ Facture générée automatiquement");
+          const fmtLabel=FORMULES.find(f=>f.id===enroll.formule)?.label||enroll.formule||"";
+          await sendWhatsApp(`💳 *Just Koul — Paiement reçu*\n👤 ${enroll.parentPrenom} ${enroll.parentNom}\n💰 ${enroll.amount} DH\n📋 ${fmtLabel}\n✅ Facture générée automatiquement`);
+        }
       }
     }
   };
