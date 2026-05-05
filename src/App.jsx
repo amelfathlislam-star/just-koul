@@ -738,24 +738,22 @@ function PublicSite({onLoginClick,data,setData}){
   const [mobileMenu,setMobileMenu]=useState(false);
   const [activeSection,setActiveSection]=useState("accueil");
   const [selDay,setSelDay]=useState(0);
-  const [tabCom,setTabCom]=useState("cantine");
   const [formContact,setFormContact]=useState({prenom:"",nom:"",tel:"",email:"",school:"al-hanane",autreEcole:"",nbEnfants:1,formule:"mensuel",repasType:"pe",days:{lundi:false,mardi:false,mercredi:false,jeudi:false},typeEvent:"",dateEvent:"",nbPersonnes:"",message:""});
   const [submitted,setSubmitted]=useState(false);
   const [hoveredCat,setHoveredCat]=useState(null);
   const [legalModal,setLegalModal]=useState(null);
   useEffect(()=>{const fn=()=>setScrolled(window.scrollY>50);window.addEventListener("scroll",fn);return()=>window.removeEventListener("scroll",fn);},[]);
-  useEffect(()=>{const ids=["accueil","cantine","buffets","galerie","commander","contact"];const obs=new IntersectionObserver(en=>{en.forEach(e=>{if(e.isIntersecting)setActiveSection(e.target.id);});},{threshold:0.3});ids.forEach(id=>{const el=document.getElementById(id);if(el)obs.observe(el);});return()=>obs.disconnect();},[]);
+  useEffect(()=>{const ids=["accueil","comment-ca-marche","cantine","engagements","buffets","avis","galerie","devis","contact"];const obs=new IntersectionObserver(en=>{en.forEach(e=>{if(e.isIntersecting)setActiveSection(e.target.id);});},{threshold:0.3});ids.forEach(id=>{const el=document.getElementById(id);if(el)obs.observe(el);});return()=>obs.disconnect();},[]);
   const scrollTo=id=>{setMobileMenu(false);document.getElementById(id)?.scrollIntoView({behavior:"smooth"});};
   const hf=(k,v)=>setFormContact(f=>({...f,[k]:v}));
-  const price=calcPrice(formContact.formule,formContact.repasType,Number(formContact.nbEnfants)||1,formContact.school);
   const approvedReviews=data.reviews.filter(r=>r.status==="approved");
-  const navLinks=[{id:"accueil",label:"Accueil"},{id:"cantine",label:"Cantine scolaire"},{id:"buffets",label:"Buffets"},{id:"galerie",label:"Galerie"},{id:"commander",label:"Commander"},{id:"contact",label:"Contact"}];
+  const navLinks=[{id:"accueil",label:"Accueil"},{id:"cantine",label:"Cantine scolaire"},{id:"buffets",label:"Buffets"},{id:"galerie",label:"Galerie"},{id:"devis",label:"Devis événement"},{id:"contact",label:"Contact"}];
   const CATEGORIES=[
-    {id:"cantine",icon:"🍱",label:"Cantine scolaire",desc:"Lundi – Jeudi",color:"#F0F9F0",border:"#2C4A1E",iconBg:"#2C4A1E"},
-    {id:"buffets",icon:"🍽️",label:"Buffets & Mariages",desc:"Sur mesure",color:"#FFF8EE",border:"#C8873A",iconBg:"#C8873A"},
-    {id:"commander",icon:"🎂",label:"Anniversaires",desc:"Livraison à domicile",color:"#FFF0F5",border:"#C0392B",iconBg:"#C0392B"},
+    {id:"cantine",icon:"🏫",label:"Cantine scolaire",desc:"Lundi – Jeudi",color:"#F0F9F0",border:"#2C4A1E",iconBg:"#2C4A1E"},
+    {id:"comment-ca-marche",icon:"📝",label:"Comment ça marche",desc:"3 étapes simples",color:"#F0F4FF",border:"#2563EB",iconBg:"#2563EB"},
+    {id:"buffets",icon:"🎂",label:"Anniversaires",desc:"Livraison à domicile",color:"#FFF0F5",border:"#C0392B",iconBg:"#C0392B"},
     {id:"buffets",icon:"🏢",label:"Corporate",desc:"Séminaires & déjeuners",color:"#F0F4FF",border:"#2563EB",iconBg:"#2563EB"},
-    {id:"buffets",icon:"🌙",label:"Ftour Ramadan",desc:"Buffets généreux",color:"#F5F0FF",border:"#7C3AED",iconBg:"#7C3AED"},
+    {id:"buffets",icon:"🎊",label:"Buffets & Mariages",desc:"Sur mesure",color:"#FFF8EE",border:"#C8873A",iconBg:"#C8873A"},
   ];
 
   return (
@@ -829,11 +827,11 @@ function PublicSite({onLoginClick,data,setData}){
 
             {/* CTA Buttons */}
             <motion.div variants={fadeUp} className="hero-ctas" style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:40}}>
-              <motion.button onClick={()=>scrollTo("commander")} whileHover={{scale:1.04,boxShadow:`0 8px 28px rgba(44,74,30,0.35)`}} whileTap={{scale:0.97}}
+              <motion.button onClick={onLoginClick} whileHover={{scale:1.04,boxShadow:`0 8px 28px rgba(44,74,30,0.35)`}} whileTap={{scale:0.97}}
                 style={{background:C.green,color:C.white,border:"none",borderRadius:30,padding:"14px 30px",fontFamily:F.sans,fontWeight:800,fontSize:14,cursor:"pointer",boxShadow:`0 4px 18px rgba(44,74,30,0.25)`,letterSpacing:0.3}}>
-                🥡 Commander la cantine
+                👨‍👩‍👧‍👦 Inscrire mon enfant
               </motion.button>
-              <motion.button onClick={()=>scrollTo("buffets")} whileHover={{scale:1.04}} whileTap={{scale:0.97}}
+              <motion.button onClick={()=>scrollTo("devis")} whileHover={{scale:1.04}} whileTap={{scale:0.97}}
                 style={{background:C.white,color:C.green,border:`2px solid ${C.green}`,borderRadius:30,padding:"14px 30px",fontFamily:F.sans,fontWeight:800,fontSize:14,cursor:"pointer",letterSpacing:0.3}}>
                 🎊 Demander un devis
               </motion.button>
@@ -977,6 +975,58 @@ function PublicSite({onLoginClick,data,setData}){
         </div>
         <style>{`@media(max-width:768px){.nd{display:none!important;}.nm{display:block!important;}}`}</style>
       </section>
+
+      {/* ── COMMENT ÇA MARCHE ── */}
+      <section id="comment-ca-marche" style={{background:"#FFFFFF",padding:"80px 2rem"}}>
+        <div style={{maxWidth:1200,margin:"0 auto"}}>
+          <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={VP} style={{textAlign:"center",marginBottom:"3.5rem"}}>
+            <motion.div variants={fadeUp} style={{fontFamily:F.sans,fontSize:11,fontWeight:800,letterSpacing:3,textTransform:"uppercase",color:C.gold,marginBottom:10}}>🚀 Simple & rapide</motion.div>
+            <motion.h2 variants={fadeUp} style={{fontFamily:F.serif,fontSize:"clamp(2rem,4vw,3rem)",color:C.green,margin:0}}>Comment ça marche ?</motion.h2>
+            <motion.p variants={fadeUp} style={{fontFamily:F.sans,fontSize:15,color:C.textL,maxWidth:480,margin:"1rem auto 0",lineHeight:1.7}}>Simple comme bonjour — en 3 étapes</motion.p>
+          </motion.div>
+          <motion.div variants={staggerFast} initial="hidden" whileInView="show" viewport={VP}
+            className="steps-grid" style={{display:"grid",gridTemplateColumns:"1fr auto 1fr auto 1fr",gap:0,alignItems:"center"}}>
+            {/* Étape 1 */}
+            <motion.div variants={fadeUp} style={{textAlign:"center",padding:"0 1.5rem"}}>
+              <div style={{width:80,height:80,borderRadius:"50%",background:C.green,display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,margin:"0 auto 1.2rem",boxShadow:`0 8px 24px rgba(44,74,30,0.3)`}}>📝</div>
+              <div style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(44,74,30,0.07)",borderRadius:20,padding:"4px 12px",marginBottom:10}}>
+                <span style={{fontFamily:F.sans,fontWeight:800,fontSize:10,color:C.green,letterSpacing:1,textTransform:"uppercase"}}>Étape 1</span>
+              </div>
+              <h3 style={{fontFamily:F.serif,fontWeight:700,fontSize:19,color:C.green,margin:"0 0 10px"}}>Inscrivez-vous</h3>
+              <p style={{fontFamily:F.sans,fontSize:13,color:C.textL,lineHeight:1.75,margin:0}}>Inscrivez-vous en ligne en 2 minutes. Choisissez votre formule, vos jours et l'école de votre enfant.</p>
+            </motion.div>
+            {/* Flèche 1 */}
+            <div className="nd" style={{fontSize:28,color:"rgba(200,135,58,0.5)",flexShrink:0,userSelect:"none"}}>→</div>
+            {/* Étape 2 */}
+            <motion.div variants={fadeUp} style={{textAlign:"center",padding:"0 1.5rem"}}>
+              <div style={{width:80,height:80,borderRadius:"50%",background:C.gold,display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,margin:"0 auto 1.2rem",boxShadow:`0 8px 24px rgba(200,135,58,0.35)`}}>👩‍🍳</div>
+              <div style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(200,135,58,0.1)",borderRadius:20,padding:"4px 12px",marginBottom:10}}>
+                <span style={{fontFamily:F.sans,fontWeight:800,fontSize:10,color:C.gold,letterSpacing:1,textTransform:"uppercase"}}>Étape 2</span>
+              </div>
+              <h3 style={{fontFamily:F.serif,fontWeight:700,fontSize:19,color:C.green,margin:"0 0 10px"}}>On cuisine</h3>
+              <p style={{fontFamily:F.sans,fontSize:13,color:C.textL,lineHeight:1.75,margin:0}}>Notre équipe prépare chaque matin des repas frais et équilibrés avec des produits locaux d'Agadir.</p>
+            </motion.div>
+            {/* Flèche 2 */}
+            <div className="nd" style={{fontSize:28,color:"rgba(200,135,58,0.5)",flexShrink:0,userSelect:"none"}}>→</div>
+            {/* Étape 3 */}
+            <motion.div variants={fadeUp} style={{textAlign:"center",padding:"0 1.5rem"}}>
+              <div style={{width:80,height:80,borderRadius:"50%",background:C.greenL,display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,margin:"0 auto 1.2rem",boxShadow:`0 8px 24px rgba(61,107,44,0.3)`}}>🛵</div>
+              <div style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(61,107,44,0.07)",borderRadius:20,padding:"4px 12px",marginBottom:10}}>
+                <span style={{fontFamily:F.sans,fontWeight:800,fontSize:10,color:C.greenL,letterSpacing:1,textTransform:"uppercase"}}>Étape 3</span>
+              </div>
+              <h3 style={{fontFamily:F.serif,fontWeight:700,fontSize:19,color:C.green,margin:"0 0 10px"}}>On livre</h3>
+              <p style={{fontFamily:F.sans,fontSize:13,color:C.textL,lineHeight:1.75,margin:0}}>Votre enfant reçoit son repas chaud entre 11h30 et 13h, directement à son école.</p>
+            </motion.div>
+          </motion.div>
+          <motion.div variants={fadeUp} initial="hidden" whileInView="show" viewport={VP} style={{textAlign:"center",marginTop:"3rem"}}>
+            <motion.button onClick={onLoginClick} whileHover={{scale:1.04,boxShadow:`0 10px 32px rgba(44,74,30,0.35)`}} whileTap={{scale:0.97}}
+              style={{background:C.green,color:C.white,border:"none",borderRadius:30,padding:"15px 36px",fontFamily:F.sans,fontWeight:800,fontSize:15,cursor:"pointer",boxShadow:`0 6px 22px rgba(44,74,30,0.28)`,letterSpacing:0.3}}>
+              👨‍👩‍👧‍👦 Inscrire mon enfant →
+            </motion.button>
+          </motion.div>
+        </div>
+      </section>
+
       {/* CANTINE */}
       <section id="cantine" style={{background:C.lcream,padding:"80px 2rem"}}>
         <div style={{maxWidth:1200,margin:"0 auto"}}>
@@ -1020,8 +1070,46 @@ function PublicSite({onLoginClick,data,setData}){
               {t.options.map((o,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:i<t.options.length-1?`1px solid ${t.popular?"rgba(255,255,255,0.15)":"rgba(200,135,58,0.15)"}`:""}}><span style={{fontFamily:F.sans,fontSize:11,color:t.popular?"rgba(255,255,255,0.8)":C.textL,flex:1}}>{o.desc}</span><span style={{fontFamily:F.serif,fontWeight:700,fontSize:15,color:t.popular?C.goldL:C.gold,whiteSpace:"nowrap",marginLeft:8}}>{o.prix}</span></div>)}
             </motion.div>)}
           </motion.div>
+          <motion.div variants={fadeUp} initial="hidden" whileInView="show" viewport={VP} style={{textAlign:"center",marginTop:"2.5rem"}}>
+            <motion.button onClick={onLoginClick} whileHover={{scale:1.04,boxShadow:`0 8px 28px rgba(44,74,30,0.35)`}} whileTap={{scale:0.97}}
+              style={{background:C.green,color:C.white,border:"none",borderRadius:30,padding:"14px 32px",fontFamily:F.sans,fontWeight:800,fontSize:14,cursor:"pointer",boxShadow:`0 4px 18px rgba(44,74,30,0.25)`,letterSpacing:0.3}}>
+              👨‍👩‍👧‍👦 Accéder à mon espace parent →
+            </motion.button>
+          </motion.div>
         </div>
       </section>
+
+      {/* ── NOS ENGAGEMENTS ── */}
+      <section id="engagements" style={{background:"linear-gradient(135deg,#2C4A1E,#3D6B2C)",padding:"80px 2rem"}}>
+        <div style={{maxWidth:1200,margin:"0 auto"}}>
+          <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={VP} style={{textAlign:"center",marginBottom:"3rem"}}>
+            <motion.div variants={fadeUp} style={{fontFamily:F.sans,fontSize:11,fontWeight:800,letterSpacing:3,textTransform:"uppercase",color:"rgba(232,165,85,0.9)",marginBottom:10}}>💚 Notre promesse</motion.div>
+            <motion.h2 variants={fadeUp} style={{fontFamily:F.serif,fontSize:"clamp(2rem,4vw,3rem)",color:"#FFFFFF",margin:0}}>Nos engagements</motion.h2>
+            <motion.p variants={fadeUp} style={{fontFamily:F.sans,fontSize:15,color:"rgba(255,255,255,0.75)",maxWidth:480,margin:"1rem auto 0",lineHeight:1.7}}>La qualité Just Koul, chaque jour</motion.p>
+          </motion.div>
+          <motion.div variants={staggerFast} initial="hidden" whileInView="show" viewport={VP}
+            className="engagements-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16}}>
+            {[
+              {icon:"🌿",title:"100% Fait maison",text:"Chaque plat préparé le matin même dans notre cuisine à Agadir"},
+              {icon:"🥩",title:"Produits frais locaux",text:"Nous sourçons nos ingrédients chez les producteurs locaux de la région Souss-Massa"},
+              {icon:"✅",title:"100% Halal",text:"Tous nos plats respectent les normes halal. Aucun compromis sur la qualité"},
+              {icon:"🚚",title:"Livraison incluse",text:"La livraison est incluse dans tous nos forfaits pour les 4 écoles partenaires"},
+              {icon:"👨‍👩‍👧",title:"Réductions fratrie",text:"Jusqu'à -30% pour les familles nombreuses. Plus d'enfants = plus d'économies"},
+              {icon:"📱",title:"Suivi en temps réel",text:"Recevez une notification WhatsApp à chaque livraison confirmée"},
+            ].map(e=>(
+              <motion.div key={e.title} variants={fadeUp} whileHover={{background:"rgba(255,255,255,0.15)"}}
+                style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:18,padding:"1.4rem",transition:"background 0.2s"}}>
+                <div style={{width:52,height:52,borderRadius:"50%",background:"rgba(255,255,255,0.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,marginBottom:12}}>
+                  {e.icon}
+                </div>
+                <div style={{fontFamily:F.serif,fontWeight:700,fontSize:15,color:"#FFFFFF",marginBottom:8}}>{e.title}</div>
+                <div style={{fontFamily:F.sans,fontSize:12,color:"rgba(255,255,255,0.75)",lineHeight:1.7}}>{e.text}</div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
       {/* BUFFETS */}
       <section id="buffets" style={{background:C.white,padding:"80px 2rem"}}>
         <div style={{maxWidth:1200,margin:"0 auto"}}>
@@ -1066,10 +1154,41 @@ function PublicSite({onLoginClick,data,setData}){
             <div style={{fontSize:40,marginBottom:10}}>📋</div>
             <h3 style={{fontFamily:F.serif,fontSize:22,color:C.white,marginBottom:8}}>Demandez votre devis personnalisé</h3>
             <p style={{fontFamily:F.sans,fontSize:14,color:"rgba(255,255,255,0.8)",marginBottom:22,maxWidth:460,margin:"0 auto 22px"}}>Chaque événement est unique. Contactez-nous pour discuter de votre projet.</p>
-            <motion.div whileHover={{scale:1.05}} whileTap={{scale:0.97}}><Btn onClick={()=>scrollTo("commander")} variant="gold">🎊 Demander un devis gratuit</Btn></motion.div>
+            <motion.div whileHover={{scale:1.05}} whileTap={{scale:0.97}}><Btn onClick={()=>scrollTo("devis")} variant="gold">🎊 Demander un devis gratuit</Btn></motion.div>
           </motion.div>
         </div>
       </section>
+      {/* ── AVIS CLIENTS ── */}
+      {approvedReviews.length>0&&(
+      <section id="avis" style={{background:"#FAF4E4",padding:"80px 2rem"}}>
+        <div style={{maxWidth:1200,margin:"0 auto"}}>
+          <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={VP} style={{textAlign:"center",marginBottom:"3rem"}}>
+            <motion.div variants={fadeUp} style={{display:"inline-flex",alignItems:"center",gap:8,background:"rgba(200,135,58,0.12)",borderRadius:30,padding:"7px 18px",marginBottom:14}}>
+              <span style={{fontFamily:F.sans,fontWeight:800,fontSize:12,color:C.gold}}>⭐ Note moyenne 4.9/5</span>
+            </motion.div>
+            <motion.h2 variants={fadeUp} style={{fontFamily:F.serif,fontSize:"clamp(2rem,4vw,3rem)",color:C.green,margin:0}}>Ce que disent les familles</motion.h2>
+          </motion.div>
+          <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={VP} style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(270px,1fr))",gap:18}}>
+            {approvedReviews.map(r=>(
+              <motion.div key={r.id} variants={fadeUp} whileHover={{y:-5,boxShadow:"0 20px 48px rgba(0,0,0,0.1)"}}>
+                <Card style={{height:"100%",display:"flex",flexDirection:"column"}}>
+                  <div style={{fontSize:24,color:C.gold,marginBottom:10}}>❝</div>
+                  <p style={{fontFamily:F.sans,fontSize:13,color:C.textL,lineHeight:1.8,marginBottom:16,fontStyle:"italic",flex:1}}>"{r.text}"</p>
+                  <div style={{display:"flex",alignItems:"center",gap:10,borderTop:`1px solid rgba(200,135,58,0.12)`,paddingTop:12,marginTop:"auto"}}>
+                    <div style={{width:40,height:40,borderRadius:"50%",background:`linear-gradient(135deg,${C.gold},${C.green})`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:F.serif,fontWeight:700,fontSize:16,color:C.white,flexShrink:0}}>{r.parentNom[0]}</div>
+                    <div>
+                      <div style={{fontFamily:F.sans,fontWeight:700,fontSize:12,color:C.green}}>{r.parentNom}</div>
+                      <Stars rating={r.rating}/>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+      )}
+
       {/* GALERIE */}
       <section id="galerie" style={{background:C.lcream,padding:"80px 2rem"}}>
         <div style={{maxWidth:1200,margin:"0 auto"}}>
@@ -1108,61 +1227,17 @@ function PublicSite({onLoginClick,data,setData}){
               ))}
             </motion.div>
           )}
-          {approvedReviews.length>0&&<>
-            <motion.h3 variants={fadeUp} initial="hidden" whileInView="show" viewport={VP} style={{textAlign:"center",fontFamily:F.serif,fontSize:20,color:C.green,marginBottom:"1.2rem"}}>Ce qu'ils disent de nous</motion.h3>
-            <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={VP} style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(250px,1fr))",gap:16}}>
-              {approvedReviews.map(r=><motion.div key={r.id} variants={fadeUp} whileHover={{y:-4}}>
-                <Card>
-                  <div style={{fontSize:20,color:C.gold,marginBottom:8}}>❝</div>
-                  <p style={{fontFamily:F.sans,fontSize:13,color:C.textL,lineHeight:1.7,marginBottom:12,fontStyle:"italic"}}>"{r.text}"</p>
-                  <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <div style={{width:36,height:36,borderRadius:"50%",background:`linear-gradient(135deg,${C.gold},${C.green})`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:F.serif,fontWeight:700,fontSize:14,color:C.white}}>{r.parentNom[0]}</div>
-                    <div><div style={{fontFamily:F.sans,fontWeight:700,fontSize:12,color:C.green}}>{r.parentNom}</div><Stars rating={r.rating}/></div>
-                  </div>
-                </Card>
-              </motion.div>)}
-            </motion.div>
-          </>}
         </div>
       </section>
-      {/* COMMANDER */}
-      <section id="commander" style={{background:C.white,padding:"80px 2rem"}}>
+      {/* DEVIS */}
+      <section id="devis" style={{background:C.white,padding:"80px 2rem"}}>
         <div style={{maxWidth:660,margin:"0 auto"}}>
           <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={VP} style={{textAlign:"center",marginBottom:"2rem"}}>
-            <motion.div variants={fadeUp} style={{fontFamily:F.sans,fontSize:11,fontWeight:800,letterSpacing:3,textTransform:"uppercase",color:C.gold,marginBottom:10}}>🥡 En ligne</motion.div>
-            <motion.h2 variants={fadeUp} style={{fontFamily:F.serif,fontSize:"clamp(2rem,4vw,3rem)",color:C.green,margin:0}}>Commander & Réserver</motion.h2>
+            <motion.div variants={fadeUp} style={{fontFamily:F.sans,fontSize:11,fontWeight:800,letterSpacing:3,textTransform:"uppercase",color:C.gold,marginBottom:10}}>🎊 Événementiel</motion.div>
+            <motion.h2 variants={fadeUp} style={{fontFamily:F.serif,fontSize:"clamp(2rem,4vw,3rem)",color:C.green,margin:0}}>Demandez votre devis</motion.h2>
+            <motion.p variants={fadeUp} style={{fontFamily:F.sans,fontSize:14,color:C.textL,marginTop:8}}>Gratuit · Réponse sous 24h</motion.p>
           </motion.div>
-          <div style={{display:"flex",justifyContent:"center",gap:10,marginBottom:"1.5rem"}}>
-            {[{id:"cantine",label:"🏫 Cantine scolaire"},{id:"devis",label:"🎊 Devis événement"}].map(t=>(
-              <button key={t.id} onClick={()=>setTabCom(t.id)} style={{background:tabCom===t.id?C.gold:C.white,color:tabCom===t.id?C.white:C.textL,border:`2px solid ${C.gold}`,borderRadius:26,padding:"10px 24px",fontFamily:F.sans,fontWeight:700,fontSize:13,cursor:"pointer",transition:"all 0.2s"}}>{t.label}</button>
-            ))}
-          </div>
-          {/* ── ONGLET CANTINE : carte de connexion ── */}
-          {tabCom==="cantine"&&(
-            <Card style={{padding:"2.5rem 2rem",textAlign:"center"}}>
-              <motion.div animate={{y:[0,-8,0]}} transition={{duration:3,repeat:Infinity,ease:"easeInOut"}} style={{fontSize:64,marginBottom:"1.2rem"}}>🍱</motion.div>
-              <h3 style={{fontFamily:F.serif,fontSize:22,color:C.green,marginBottom:10}}>Commandez depuis votre espace</h3>
-              <p style={{fontFamily:F.sans,fontSize:14,color:C.textL,maxWidth:420,margin:"0 auto 1.6rem",lineHeight:1.7}}>Pour commander des repas pour votre enfant, connectez-vous à votre espace parent ou créez un compte gratuitement.</p>
-              <div className="form-2col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:"1.6rem",textAlign:"left"}}>
-                {[{icon:"📊",label:"Suivi des repas",desc:"Historique & livraisons"},{icon:"💳",label:"Paiement facile",desc:"Virement ou espèces"},{icon:"🗓️",label:"Menus du mois",desc:"Planification à l'avance"},{icon:"🔔",label:"Notifications",desc:"Confirmations & rappels"}].map(a=>(
-                  <div key={a.label} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"12px 14px",background:C.lcream,borderRadius:14}}>
-                    <div style={{fontSize:22,flexShrink:0}}>{a.icon}</div>
-                    <div>
-                      <div style={{fontFamily:F.sans,fontWeight:700,fontSize:13,color:C.green}}>{a.label}</div>
-                      <div style={{fontFamily:F.sans,fontSize:11,color:C.textL,marginTop:2}}>{a.desc}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div style={{display:"flex",flexDirection:"column",gap:10,maxWidth:340,margin:"0 auto"}}>
-                <Btn onClick={onLoginClick} full>👨‍👩‍👧‍👦 Se connecter à mon espace</Btn>
-                <Btn onClick={onLoginClick} variant="outline" full>📝 Créer mon compte gratuitement</Btn>
-              </div>
-              <p style={{textAlign:"center",fontFamily:F.sans,fontSize:11,color:C.textL,marginTop:20}}>Ou WhatsApp : <a href="https://wa.me/212633958760" style={{color:C.gold,fontWeight:700,textDecoration:"none"}}>06 33 95 87 60</a></p>
-            </Card>
-          )}
-          {/* ── ONGLET DEVIS : formulaire inchangé ── */}
-          {tabCom==="devis"&&(submitted?(
+          {submitted?(
             <Card style={{textAlign:"center",padding:"3rem"}}>
               <div style={{fontSize:56,marginBottom:14}}>🎉</div>
               <h3 style={{fontFamily:F.serif,fontSize:22,color:C.green,marginBottom:10}}>Demande envoyée !</h3>
@@ -1192,7 +1267,7 @@ function PublicSite({onLoginClick,data,setData}){
               </Btn>
               <p style={{textAlign:"center",fontFamily:F.sans,fontSize:11,color:C.textL,marginTop:12}}>Ou WhatsApp : <a href="https://wa.me/212633958760" style={{color:C.gold,fontWeight:700,textDecoration:"none"}}>06 33 95 87 60</a></p>
             </Card>
-          ))}
+          )}
         </div>
       </section>
       {/* CONTACT */}
@@ -3079,7 +3154,7 @@ export default function App(){
   );
 
   return <>
-    <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,800;1,400&family=Nunito:wght@300;400;600;700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0;}body{overflow-x:hidden;}::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-thumb{background:rgba(200,135,58,0.4);border-radius:3px;}input:focus,select:focus,textarea:focus{border-color:#C8873A!important;box-shadow:0 0 0 3px rgba(200,135,58,0.1)!important;outline:none;}@media(max-width:1024px){.buffet-grid{grid-template-columns:repeat(2,1fr)!important;}}@media(max-width:768px){.nd{display:none!important;}.nm{display:block!important;}.hero-grid{grid-template-columns:1fr!important;min-height:auto!important;gap:1.5rem!important;padding-top:0!important;}.hero-img-wrap{min-height:auto!important;padding-bottom:1rem!important;}.hero-img-box{width:260px!important;height:260px!important;}.hero-float{display:none!important;}.hero-ctas{flex-direction:column!important;}.hero-ctas>*{width:100%!important;box-sizing:border-box!important;}.hero-stats{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important;}.form-2col{grid-template-columns:1fr!important;}.buffet-grid{grid-template-columns:1fr!important;}.dash-sidebar{position:fixed!important;top:0!important;left:0!important;height:100vh!important;z-index:100!important;transform:translateX(-100%)!important;width:260px!important;}.dash-sidebar.open{transform:translateX(0)!important;}}`}</style>
+    <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,800;1,400&family=Nunito:wght@300;400;600;700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0;}body{overflow-x:hidden;}::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-thumb{background:rgba(200,135,58,0.4);border-radius:3px;}input:focus,select:focus,textarea:focus{border-color:#C8873A!important;box-shadow:0 0 0 3px rgba(200,135,58,0.1)!important;outline:none;}@media(max-width:1024px){.buffet-grid{grid-template-columns:repeat(2,1fr)!important;}.engagements-grid{grid-template-columns:repeat(2,1fr)!important;}}@media(max-width:768px){.nd{display:none!important;}.nm{display:block!important;}.hero-grid{grid-template-columns:1fr!important;min-height:auto!important;gap:1.5rem!important;padding-top:0!important;}.hero-img-wrap{min-height:auto!important;padding-bottom:1rem!important;}.hero-img-box{width:260px!important;height:260px!important;}.hero-float{display:none!important;}.hero-ctas{flex-direction:column!important;}.hero-ctas>*{width:100%!important;box-sizing:border-box!important;}.hero-stats{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important;}.form-2col{grid-template-columns:1fr!important;}.buffet-grid{grid-template-columns:1fr!important;}.engagements-grid{grid-template-columns:1fr!important;}.steps-grid{grid-template-columns:1fr!important;}.dash-sidebar{position:fixed!important;top:0!important;left:0!important;height:100vh!important;z-index:100!important;transform:translateX(-100%)!important;width:260px!important;}.dash-sidebar.open{transform:translateX(0)!important;}}`}</style>
     <AnimatePresence>
       {showLogin&&<LoginModal key="modal" onLogin={handleLogin} onClose={()=>setShowLogin(false)} data={data}/>}
     </AnimatePresence>
