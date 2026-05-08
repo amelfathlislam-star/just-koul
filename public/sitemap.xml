@@ -1,32 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://just-koul.vercel.app/</loc>
+    <loc>https://www.justkoul.com/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://just-koul.vercel.app/#cantine</loc>
+    <loc>https://www.justkoul.com/#cantine</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://just-koul.vercel.app/#buffets</loc>
+    <loc>https://www.justkoul.com/#buffets</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://just-koul.vercel.app/#galerie</loc>
+    <loc>https://www.justkoul.com/#galerie</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://just-koul.vercel.app/#commander</loc>
+    <loc>https://www.justkoul.com/#commander</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://just-koul.vercel.app/#contact</loc>
+    <loc>https://www.justkoul.com/#contact</loc>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
